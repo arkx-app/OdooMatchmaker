@@ -16,6 +16,25 @@ export default {
         foreground: "hsl(var(--foreground) / <alpha-value>)",
         border: "hsl(var(--border) / <alpha-value>)",
         input: "hsl(var(--input) / <alpha-value>)",
+        // Custom gradient colors for Odoo Matchmaker
+        client: {
+          from: "#FF6B6B",
+          via: "#FF8E53",
+          to: "#FFA07A",
+        },
+        partner: {
+          from: "#4E54C8",
+          via: "#6366F1",
+          to: "#8B5CF6",
+        },
+        success: {
+          from: "#10B981",
+          to: "#34D399",
+        },
+        danger: {
+          from: "#EF4444",
+          to: "#F87171",
+        },
         card: {
           DEFAULT: "hsl(var(--card) / <alpha-value>)",
           foreground: "hsl(var(--card-foreground) / <alpha-value>)",
