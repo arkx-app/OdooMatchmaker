@@ -4,7 +4,7 @@ import { Users, Briefcase, ArrowRight } from "lucide-react";
 export default function Split() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2 grid-cols-1">
-      <Link href="/client/swipe" data-testid="link-split-client">
+      <Link href="/client-home" data-testid="link-split-client">
         <div className="relative group min-h-[50vh] lg:min-h-screen flex items-center justify-center overflow-hidden cursor-pointer hover-elevate active-elevate-2">
           <div 
             className="absolute inset-0 bg-gradient-to-br from-client-from via-client-via to-client-to opacity-95"
@@ -36,7 +36,7 @@ export default function Split() {
         </div>
       </Link>
 
-      <Link href="/partner/signup" data-testid="link-split-partner">
+      <Link href="/partner-home" data-testid="link-split-partner">
         <div className="relative group min-h-[50vh] lg:min-h-screen flex items-center justify-center overflow-hidden cursor-pointer hover-elevate active-elevate-2">
           <div 
             className="absolute inset-0 bg-gradient-to-br from-partner-from via-partner-via to-partner-to opacity-95"
