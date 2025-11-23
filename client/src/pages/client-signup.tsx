@@ -32,6 +32,26 @@ const budgetRanges = [
   "> $100,000",
 ];
 
+const projectTimelines = [
+  "Urgent (1-3 months)",
+  "Soon (3-6 months)",
+  "Planned (6-12 months)",
+  "Exploratory",
+];
+
+const odooModules = [
+  "Accounting",
+  "CRM",
+  "Sales",
+  "Inventory",
+  "HR",
+  "Manufacturing",
+  "E-commerce",
+  "Project Management",
+  "Custom Modules",
+  "Other",
+];
+
 export default function ClientSignup() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -45,6 +65,8 @@ export default function ClientSignup() {
       company: "",
       industry: "",
       budget: "",
+      projectTimeline: "",
+      odooModules: "",
     },
   });
 
@@ -198,6 +220,63 @@ export default function ClientSignup() {
                           {budgetRanges.map((range) => (
                             <SelectItem key={range} value={range}>
                               {range}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold mb-4">Project Details</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Help us match you with the right partners by sharing more about your project
+                  </p>
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="projectTimeline"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Project Timeline</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-timeline">
+                            <SelectValue placeholder="When do you need this completed?" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {projectTimelines.map((timeline) => (
+                            <SelectItem key={timeline} value={timeline}>
+                              {timeline}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="odooModules"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Odoo Modules Needed</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-modules">
+                            <SelectValue placeholder="Which modules do you need?" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {odooModules.map((module) => (
+                            <SelectItem key={module} value={module}>
+                              {module}
                             </SelectItem>
                           ))}
                         </SelectContent>

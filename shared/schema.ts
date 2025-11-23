@@ -22,6 +22,8 @@ export const clients = pgTable("clients", {
   company: text("company").notNull(),
   industry: text("industry").notNull(),
   budget: text("budget").notNull(),
+  projectTimeline: text("project_timeline"),
+  odooModules: text("odoo_modules"),
 });
 
 export const matches = pgTable("matches", {
@@ -43,6 +45,9 @@ export const insertPartnerSchema = createInsertSchema(partners).omit({
 
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
+}).extend({
+  projectTimeline: z.string().optional(),
+  odooModules: z.string().optional(),
 });
 
 export const insertMatchSchema = createInsertSchema(matches).omit({

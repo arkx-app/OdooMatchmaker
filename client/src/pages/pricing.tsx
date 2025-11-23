@@ -9,47 +9,50 @@ import { Badge } from "@/components/ui/badge";
 const plans = [
   {
     name: "Starter",
-    description: "Perfect for small businesses exploring Odoo partnerships",
+    description: "Perfect for new Odoo partners building their client base",
     monthlyPrice: 29,
     yearlyPrice: 279,
     features: [
-      "Up to 50 swipes per month",
+      "Up to 50 qualified client leads per month",
       "Basic profile visibility",
-      "Email notifications",
+      "Email notifications for matches",
       "Standard support",
       "Match history (30 days)",
+      "Client filtering by budget",
     ],
   },
   {
     name: "Professional",
-    description: "Ideal for growing companies seeking quality matches",
+    description: "Ideal for established partners seeking consistent growth",
     monthlyPrice: 79,
     yearlyPrice: 759,
     features: [
-      "Unlimited swipes",
-      "Enhanced profile visibility",
+      "Unlimited qualified client leads",
+      "Enhanced profile visibility & featured placement",
       "Priority matching algorithm",
       "Real-time notifications",
       "Match history (unlimited)",
-      "Advanced filtering",
-      "Messaging system",
+      "Advanced filtering by industry & project size",
+      "Client messaging system",
       "Priority support",
+      "Performance analytics",
     ],
     featured: true,
   },
   {
     name: "Enterprise",
-    description: "For organizations requiring comprehensive solutions",
+    description: "For agencies and consultancies managing multiple partners",
     monthlyPrice: 199,
     yearlyPrice: 1910,
     features: [
       "Everything in Professional",
       "Dedicated account manager",
       "Custom matching criteria",
-      "API access",
-      "Analytics dashboard",
+      "API access for integration",
+      "Team management (multiple users)",
+      "Advanced analytics dashboard",
       "White-label options",
-      "Bulk user management",
+      "Bulk operations",
       "24/7 premium support",
       "SLA guarantees",
     ],
@@ -75,7 +78,7 @@ export default function Pricing() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <h1 className="text-xl font-bold">Pricing</h1>
+          <h1 className="text-xl font-bold">Partner Pricing</h1>
           <div className="w-10" />
         </div>
       </header>
@@ -83,10 +86,10 @@ export default function Pricing() {
       <main className="max-w-7xl mx-auto px-6 py-16 space-y-16">
         <div className="text-center space-y-6">
           <h1 className="text-5xl font-bold">
-            Simple, Transparent Pricing
+            Partner Pricing
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Choose the perfect plan for your business. Upgrade or downgrade anytime.
+            Scale your Odoo business with high-quality, pre-qualified client leads. For clients, Odoo Matchmaker is completely free.
           </p>
 
           <div className="flex items-center justify-center gap-4">
@@ -107,6 +110,18 @@ export default function Pricing() {
               </Badge>
             )}
           </div>
+        </div>
+
+        <div className="bg-card/50 border rounded-lg p-6 text-center space-y-2">
+          <p className="text-lg font-semibold">💡 Pricing for Partners Only</p>
+          <p className="text-muted-foreground">
+            If you're a client looking for Odoo partners, you can browse and match for completely free. No hidden charges, no credit card required.
+          </p>
+          <Link href="/split">
+            <Button variant="outline" size="sm" className="mt-4">
+              Browse as a Client
+            </Button>
+          </Link>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
@@ -142,7 +157,7 @@ export default function Pricing() {
                   </div>
                   {isYearly && (
                     <p className="text-sm text-muted-foreground">
-                      Billed ${plan.yearlyPrice} annually
+                      Billed ${plan.yearlyPrice} annually (save {savings(plan)}%)
                     </p>
                   )}
                 </div>
@@ -160,7 +175,7 @@ export default function Pricing() {
               <Button
                 className={`w-full ${
                   plan.featured
-                    ? "bg-gradient-to-r from-primary via-primary to-primary/90"
+                    ? "bg-gradient-to-r from-partner-from via-partner-from to-partner-to"
                     : ""
                 }`}
                 variant={plan.featured ? "default" : "outline"}
@@ -173,21 +188,14 @@ export default function Pricing() {
           ))}
         </div>
 
-        <div className="text-center space-y-4 pt-8">
-          <p className="text-muted-foreground">
-            All plans include a 14-day free trial. No credit card required.
+        <div className="bg-gradient-to-r from-partner-from/10 to-partner-to/10 border rounded-lg p-12 text-center space-y-4">
+          <h2 className="text-3xl font-bold">Not sure which plan is right for you?</h2>
+          <p className="text-muted-foreground max-w-xl mx-auto">
+            Our team can help you find the perfect plan for your Odoo partnership business. Let's connect and discuss your goals.
           </p>
-          <div className="flex justify-center gap-6 text-sm">
-            <a href="#" className="text-primary hover:underline">
-              Compare all features
-            </a>
-            <a href="#" className="text-primary hover:underline">
-              Enterprise solutions
-            </a>
-            <a href="#" className="text-primary hover:underline">
-              Contact sales
-            </a>
-          </div>
+          <Button variant="outline" size="lg">
+            Schedule a Demo
+          </Button>
         </div>
       </main>
     </div>
