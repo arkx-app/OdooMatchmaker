@@ -15,8 +15,11 @@ function Router() {
     <Switch>
       <Route path="/" component={Landing} />
       <Route path="/client/swipe" component={ClientSwipe} />
+      <Route path="/client-swipe" component={ClientSwipe} />
       <Route path="/client/signup" component={ClientSignup} />
+      <Route path="/client-signup" component={ClientSignup} />
       <Route path="/partner/signup" component={PartnerSignup} />
+      <Route path="/partner-signup" component={PartnerSignup} />
       <Route path="/pricing" component={Pricing} />
       <Route component={NotFound} />
     </Switch>
