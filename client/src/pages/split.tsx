@@ -1,9 +1,26 @@
-import { Link } from "wouter";
-import { Users, Briefcase, ArrowRight } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { Users, Briefcase, ArrowRight, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function Split() {
+  const [, setLocation] = useLocation();
+  
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 grid-cols-1">
+    <div className="min-h-screen grid lg:grid-cols-2 grid-cols-1 relative">
+      {/* Go Back Button - Fixed position, high z-index, visible on both sides */}
+      <div className="absolute top-6 left-6 z-[100]">
+        <Button
+          variant="outline"
+          size="icon"
+          className="bg-white/25 backdrop-blur-md hover:bg-white/35 text-white border-2 border-white/50 shadow-xl hover:shadow-2xl transition-all w-10 h-10"
+          onClick={() => setLocation("/")}
+          data-testid="button-go-back"
+          aria-label="Go back to homepage"
+        >
+          <ArrowLeft className="w-5 h-5 text-white" />
+        </Button>
+      </div>
+      
       <Link href="/client-home" data-testid="link-split-client">
         <div className="relative group min-h-[50vh] lg:min-h-screen flex items-center justify-center overflow-hidden cursor-pointer hover-elevate active-elevate-2">
           <div 
