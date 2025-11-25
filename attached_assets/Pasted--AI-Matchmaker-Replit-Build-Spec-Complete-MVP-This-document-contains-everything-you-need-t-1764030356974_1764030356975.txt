@@ -1,0 +1,289 @@
+# AI Matchmaker — Replit Build Spec & Complete MVP
+
+This document contains **everything** you need to build a production-ready AI Matchmaker on Replit: UI flows, database schema, API endpoints, authentication, matching algorithm, partner/client dashboards, messaging, payments, ROI tracking, project lifecycle, integrations, deployment notes, and a prioritized sprintable task list you can copy into Replit and start building.
+
+---
+
+## 1) Project overview (short)
+
+* Two user types: **Partner** (implementation/service provider) and **Client** (SMB looking for implementation).
+* Clients swipe/browse/match to find partners; partners subscribe to receive curated matches and pay commission on successful projects.
+* Core value: high-quality, vetted AI matches that reduce time-to-hire and increase project success rate.
+
+---
+
+## 2) MVP scope (must-have)
+
+1. Auth & onboarding: Partner vs Client flow.
+2. Partner profile creation: skills, industries, modules, past projects, capacity, rates, badges.
+3. Client project brief form: industry, size, modules, budget, timeline, pain points, integrations.
+4. Simple matching engine that returns ranked partner list (top 10) using rules + ML/LLM scoring.
+5. Client UI: swipe, save, request intro, message partner (DM), schedule discovery call.
+6. Partner UI: dashboard of matches, lead inbox, accept/decline, track pipeline.
+7. Payments: Stripe subscription for partners + project commission capture (webhook + invoicing flow).
+8. Basic analytics: matches, conversion rate, revenue per match, estimated ROI display.
+9. Project tracking: simple project/card lifecycle (Matched → Engaged → Contracted → In Progress → Completed).
+10. Admin panel: manage partners, clients, disputes, refunds.
+
+---
+
+## 3) Recommended Tech Stack (works great on Replit)
+
+* Backend: **FastAPI** (Python) or **Node+Express**. (I'll assume FastAPI for examples.)
+* Frontend: **React** (CRA or Vite) with Tailwind CSS.
+* DB: **Postgres** (Replit Postgres or Supabase). Use SQLAlchemy or Prisma.
+* Realtime/Messaging: **Pusher** or **Supabase Realtime** or simple websocket via FastAPI.
+* Payments: **Stripe** (subscriptions + one-off project commission capture).
+* Storage: **S3-compatible** or Replit storage for file uploads; Supabase Storage is convenient.
+* Authentication: **JWT** + OAuth (Google) optional.
+* AI: OpenAI or other LLMs for scoring + prompt templates. Use vector DB (e.g., Milvus, Pinecone, or Supabase vector) later for semantic search.
+* Deployment: Replit deploy; use environment variables for API keys.
+
+---
+
+## 4) Data model (Postgres)
+
+### Tables (core):
+
+* users (id, email, name, password_hash, role[partner|client|admin], created_at)
+* partners (id, user_id, company_name, country, regions, industries[], services[], modules[], certifications[], hourly_rate_min, hourly_rate_max, capacity_status, bio, website, logo_url, verified, rating_avg, created_at)
+* partner_projects (id, partner_id, title, description, value, start_date, end_date, success, tags[])
+* clients (id, user_id, company_name, country, size, industry, created_at)
+* briefs (id, client_id, title, description, modules_needed[], budget_min, budget_max, timeline_weeks, integrations[], priority, status, created_at)
+* matches (id, brief_id, partner_id, score, reasons_json, status[suggested|sent|accepted|rejected|converted], created_at)
+* messages (id, match_id, from_user_id, to_user_id, body, attachments[], read, created_at)
+* subscriptions (id, partner_id, stripe_subscription_id, plan, status, started_at)
+* commission_invoices (id, match_id, partner_id, amount, status)
+* projects (id, match_id, partner_id, client_id, contract_url, value, status, start_date, end_date, created_at)
+* analytics (id, partner_id, metric_date, matches_sent, matches_accepted, conversions, revenue)
+
+Notes: Use JSONB for flexible fields like modules, industries, reasons_json.
+
+---
+
+## 5) Matching engine design
+
+**Inputs:** Client brief + partner profile
+**Outputs:** Sorted list of partner matches with `score` and `reasons` for explainability.
+
+### Scoring components (weighted):
+
+* **Fit on modules** (weight 30%) — exact and partial match
+* **Industry experience** (weight 20%) — past projects in same industry
+* **Budget fit** (weight 15%) — within partner’s rate/capacity
+* **Availability / capacity** (weight 10%) — can start within timeline
+* **Geographic / timezone match** (weight 5%)
+* **Rating / reputation** (weight 10%)
+* **Recent activity / responsiveness** (weight 5%)
+
+### Implementation approach (MVP):
+
+1. Hard rule matching + weighted score (deterministic SQL + Python). Good for first release.
+2. LLM ranking: create a prompt feeding brief + partner summary, ask model to rank 1-10 and return reasons (for explainability). Combine rule score + LLM score.
+3. Store top matches in `matches` table and notify partner.
+
+### Explainability
+
+Return `reasons_json` with short bullets such as: "Strong module match (Inventory, MRP); 3 prior projects in retail; budget aligns; available in 2 weeks."
+
+---
+
+## 6) Client experience on match (what client sees)
+
+* **Match card**: partner name, logo, rating, top skills, short pitch, score % and key reasons.
+* **Actions:** Save, Swipe / Next, Request Intro (sends a match request + client message), Message (open DM), Schedule Call (calendar invite), View Case Studies.
+* **Swipe up / Share:** Share match via link / social (pre-filled teaser for viral growth: "Found my Odoo partner on Match360")
+* **Post-match conversion:** If client starts contract, they mark match as converted → triggers commission flow and project kickoff wizard.
+
+---
+
+## 7) Partner dashboard (what partner sees)
+
+**Main dashboard elements:**
+
+* **Leads feed / Matches inbox**: ranked matches, lead brief preview, contact info, accept/decline, quick message template.
+* **Pipeline board**: matches accepted → intros → proposals → contracted. Kanban style.
+* **ROI widget**: Shows value of matched projects, conversion rate, revenue won, avg project size, LTV over time.
+* **Capacity calendar**: mark availability for next 3 months to improve matching.
+* **Billing**: subscription status, upcoming commission invoices, payments received.
+* **Profile health**: suggestions to improve match rank (add case studies, update rates, verification badge).
+* **Metrics export**: CSV/Excel of matches, responses, conversion.
+
+---
+
+## 8) Messaging & intro workflow
+
+* Clients can DM partners only after an intro request or saved match (prevents spam).
+* Introductions create a `match` record with status `sent` and two-way messaging thread.
+* Support templates: pre-populated discovery message, call scheduler link, NDA upload.
+* Optional: in-app video message / short recorded pitch for partners to increase CTR.
+
+---
+
+## 9) Payments & Commercial Model
+
+* **Partner subscription tiers:** Basic (limited matches), Pro (higher match quota + featured), Enterprise (priority + dedicated success rep). Example prices: $99/mo, $299/mo, $999/mo.
+* **Success fee / commission:** 8–12% of project value, collected via Stripe Connect or via invoice + webhook.
+* **Escrow (optional later):** hold commission on platform until project milestone met.
+* **Free trial / credits:** Give partners match credits to convert.
+
+---
+
+## 10) Project & commercial tracking
+
+* Create `projects` entry once a match converts.
+* Track milestones, payments, deliverables, client satisfaction rating at completion.
+* Auto-generate commission invoice when project status is `contracted` or `milestone_paid` depending on contract terms.
+* Report: Revenue per partner, Avg deal size, Sales cycle length.
+
+---
+
+## 11) Admin panel (essential features)
+
+* Manage users, partners, clients
+* Approve/verify partners and badges
+* Refunds and commission disputes flow
+* Monitor matching quality (A/B tests), logs for AI decisions
+* Moderation of messages, content, and banned partners
+
+---
+
+## 12) API endpoints (FastAPI examples)
+
+**Auth**
+
+* POST /api/auth/register (role)
+* POST /api/auth/login
+
+**Partners**
+
+* GET /api/partners/:id
+* POST /api/partners (create profile)
+* PATCH /api/partners/:id
+* POST /api/partners/:id/availability
+
+**Clients & Briefs**
+
+* POST /api/briefs
+* GET /api/briefs/:id
+* GET /api/briefs/:id/matches
+
+**Matches**
+
+* GET /api/matches?partner_id=&status=
+* POST /api/matches/:id/respond (accept/reject)
+* POST /api/matches/:id/message
+* POST /api/matches/:id/convert (create project)
+
+**Payments**
+
+* POST /api/payments/subscribe
+* POST /api/payments/webhook (stripe webhook)
+
+**Admin**
+
+* GET /api/admin/stats
+* POST /api/admin/verify_partner
+
+---
+
+## 13) Priority MVP roadmap (sprint by sprint)
+
+**Sprint 0 (1–2 days)**: repo + env + DB + auth + user roles
+**Sprint 1 (3–5 days)**: partner & client onboarding forms, profile pages
+**Sprint 2 (4–6 days)**: brief form, basic matching logic (rule-based), matches list
+**Sprint 3 (4–6 days)**: client swipe UI, partner matches inbox, messaging
+**Sprint 4 (3–5 days)**: Stripe subscription + webhook, billing pages
+**Sprint 5 (3–5 days)**: project convert flow, commission capture, analytics
+**Sprint 6 (2–4 days)**: admin panel, verification, profile health tips
+**Sprint 7 (ongoing)**: LLM ranking, explainability, performance improvements, scaling
+
+---
+
+## 14) Prompts & LLM usage (examples)
+
+**Ranking prompt (short):**
+
+```
+You are an expert matchmaking assistant for software implementation projects.
+Rate how good a match this partner is for this client brief on a 1-100 scale and give 3 short reasons.
+Client brief: {brief_text}
+Partner summary: {partner_text}
+Answer with JSON: {"score":int, "reasons":["...","...","..."]}
+```
+
+Combine LLM score with rule score: `final_score = 0.6*rule_score + 0.4*llm_score` (tune later).
+
+---
+
+## 15) UX copy suggestions (short snippets)
+
+* Match card CTA: "Request intro" / "Message partner" / "Save for later"
+* Partner inbox CTA: "Claim lead" / "Set availability" / "Send quick intro"
+* ROI widget: "Matches: 34 • Responses: 12 • Wins: $120k"
+
+---
+
+## 16) Security & compliance notes
+
+* Store minimal PII, encrypt sensitive fields
+* PCI via Stripe — do not store card numbers
+* GDPR: Data export & delete endpoints for users
+* Rate limit APIs and log suspicious activity
+
+---
+
+## 17) Scalability & future features
+
+* Vector matching for semantic brief-to-case matching
+* Partner reputation scoring via verified case studies, reviews
+* Marketplace for fixed-scope packages
+* Enterprise integrations (SAML SSO, custom workflows)
+
+---
+
+## 18) Developer checklist (copy into tasks)
+
+1. Initialize repo, env, Replit secrets
+2. Build DB schema and migrations
+3. Auth boilerplate + email verification
+4. Partner & Client onboard UIs
+5. Brief form + store briefs
+6. Rule‑based matching worker (cron or on‑brief creation)
+7. Matches table + notifications
+8. Client swipe UI + match request flow
+9. Partner inbox & pipeline board
+10. Messaging service (websocket) + persistence
+11. Stripe subscription & webhook handling
+12. Project convert flow + commission invoice
+13. Admin panel
+14. Tests + basic UI polish
+
+---
+
+## 19) Example pricing packs (for landing page)
+
+* Starter: $99/mo (20 matches/month, 1 seat)
+* Growth: $299/mo (100 matches/month, 3 seats, featured)
+* Enterprise: $999/mo (custom feed, SLA, dedicated rep)
+* Commission: 10% of matched-converted project value
+
+---
+
+## 20) Next immediate steps for you (copy-paste into Replit tasks)
+
+1. Create GitHub-linked Replit project and add secrets (DB, OPENAI_KEY, STRIPE_KEY).
+2. Implement auth and two-role onboarding.
+3. Implement brief form and partner profile forms.
+4. Implement basic matching rules and call it from brief creation.
+5. Build client swipe UI and partner matches inbox.
+
+---
+
+If you want, I can now:
+
+* generate the FastAPI backend skeleton (routes + models) and React frontend skeleton ready for Replit, or
+* write the matching worker code (rule-based + LLM integration), or
+* create the SQL schema + migration scripts.
+
+Tell me which file to output first and I'll generate code you can paste into R
