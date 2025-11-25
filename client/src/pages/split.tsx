@@ -1,9 +1,21 @@
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { Users, Briefcase, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Split() {
   const [, setLocation] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
+  const isSignup = searchParams.get("signup") === "true";
+
+  const handleClientClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setLocation(isSignup ? "/client/signup" : "/client-home");
+  };
+
+  const handlePartnerClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setLocation(isSignup ? "/partner/signup" : "/partner-home");
+  };
   
   return (
     <div className="min-h-screen grid lg:grid-cols-2 grid-cols-1 relative">
@@ -21,7 +33,7 @@ export default function Split() {
         </Button>
       </div>
       
-      <Link href="/client-home" data-testid="link-split-client">
+      <div onClick={handleClientClick} data-testid="link-split-client">
         <div className="relative group min-h-[50vh] lg:min-h-screen flex items-center justify-center overflow-hidden cursor-pointer hover-elevate active-elevate-2">
           <div 
             className="absolute inset-0 bg-gradient-to-br from-client-from via-client-via to-client-to opacity-95"
@@ -51,9 +63,9 @@ export default function Split() {
             </div>
           </div>
         </div>
-      </Link>
+      </div>
 
-      <Link href="/partner-home" data-testid="link-split-partner">
+      <div onClick={handlePartnerClick} data-testid="link-split-partner">
         <div className="relative group min-h-[50vh] lg:min-h-screen flex items-center justify-center overflow-hidden cursor-pointer hover-elevate active-elevate-2">
           <div 
             className="absolute inset-0 bg-gradient-to-br from-partner-from via-partner-via to-partner-to opacity-95"
@@ -83,7 +95,7 @@ export default function Split() {
             </div>
           </div>
         </div>
-      </Link>
+      </div>
     </div>
   );
 }

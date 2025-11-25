@@ -27,7 +27,7 @@ const features = [
 ];
 
 const stats = [
-  { value: "10K+", label: "Active Users" },
+  { value: "1K+", label: "Active Partners" },
   { value: "5K+", label: "Successful Matches" },
   { value: "98%", label: "Satisfaction Rate" },
   { value: "24/7", label: "Support Available" },
@@ -46,7 +46,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section with Partner Colors */}
-      <section className="relative overflow-hidden min-h-[90vh] flex items-center justify-center px-6">
+      <section className="relative overflow-hidden min-h-[45vh] flex items-center justify-center px-6">
         {/* Gradient Background */}
         <div 
           className="absolute inset-0 bg-gradient-to-br from-partner-from via-partner-via to-partner-to opacity-95"
@@ -56,7 +56,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_100%,rgba(139,92,246,0.2),transparent_50%)]" aria-hidden="true" />
         
         {/* Content */}
-        <div className="relative z-10 max-w-5xl mx-auto text-center space-y-8 py-20">
+        <div className="relative z-10 max-w-5xl mx-auto text-center space-y-4 py-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm border border-white/30">
             <Sparkles className="w-4 h-4 text-white" />
             <span className="text-sm font-medium text-white">AI-Powered Matchmaking</span>
@@ -79,7 +79,7 @@ export default function Home() {
             <Link href="/get-started">
               <Button 
                 size="lg"
-                className="bg-white text-partner-from hover:bg-white/90 text-lg px-8 py-6 h-auto font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                className="bg-white text-partner-from hover:bg-white/90 text-base px-8 py-3 h-auto font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
                 data-testid="button-get-started"
               >
                 Get Started
@@ -89,7 +89,7 @@ export default function Home() {
             <Button 
               size="lg"
               variant="outline"
-              className="border-2 border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 text-lg px-8 py-6 h-auto font-semibold"
+              className="border-2 border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 text-base px-8 py-3 h-auto font-semibold"
             >
               Learn More
             </Button>
@@ -177,8 +177,8 @@ export default function Home() {
       <section className="py-20 px-6 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-partner-from/10 via-partner-via/10 to-partner-to/10" aria-hidden="true" />
         
-        <div className="relative max-w-4xl mx-auto text-center space-y-8">
-          <div className="space-y-4">
+        <div className="relative max-w-4xl mx-auto text-center">
+          <div className="space-y-4 mb-12">
             <h2 className="text-4xl lg:text-5xl font-bold">
               Ready to Find Your Perfect Match?
             </h2>
@@ -187,10 +187,10 @@ export default function Home() {
             </p>
           </div>
 
-          <Link href="/get-started">
+          <Link href="/get-started" className="inline-block">
             <Button 
               size="lg"
-              className="bg-gradient-to-r from-partner-from to-partner-to text-white hover:opacity-90 text-lg px-12 py-6 h-auto font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+              className="bg-gradient-to-r from-partner-from to-partner-to text-white hover:opacity-90 text-base px-12 py-3 h-auto font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 mt-12 mb-12"
               data-testid="button-cta-get-started"
             >
               Get Started Now
