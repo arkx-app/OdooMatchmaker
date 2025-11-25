@@ -28,7 +28,7 @@ export default function ClientSwipe() {
         partnerId,
         liked,
       });
-      return response;
+      return await response.json();
     },
     onSuccess: (data: any) => {
       if (data.matched) {
@@ -193,7 +193,7 @@ export default function ClientSwipe() {
                           <div className="flex items-center gap-2">
                             <div className="flex gap-1">
                               {Array.from({ length: 5 }).map((_, i) => (
-                                <span key={i} className={i < partner.rating ? "text-yellow-500" : "text-muted"}>
+                                <span key={i} className={i < (partner.rating || 3) ? "text-yellow-500" : "text-muted"}>
                                   ★
                                 </span>
                               ))}
