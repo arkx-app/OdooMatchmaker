@@ -69,10 +69,11 @@ export default function PartnerSignup() {
         window.location.href = "/partner/dashboard";
       }, 2000);
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Mutation error:", error);
       toast({
         title: "Error",
-        description: "Failed to create profile. Please try again.",
+        description: error?.message || "Failed to create profile. Please try again.",
         variant: "destructive",
       });
     },
@@ -102,6 +103,7 @@ export default function PartnerSignup() {
       });
       return;
     }
+    console.log("Form submitted with data:", { ...data, services: selectedServices });
     mutation.mutate({ ...data, services: selectedServices });
   };
 

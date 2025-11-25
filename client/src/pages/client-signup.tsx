@@ -84,16 +84,18 @@ export default function ClientSignup() {
       });
       setTimeout(() => navigate("/client/swipe"), 2000);
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Mutation error:", error);
       toast({
         title: "Error",
-        description: "Failed to create profile. Please try again.",
+        description: error?.message || "Failed to create profile. Please try again.",
         variant: "destructive",
       });
     },
   });
 
   const onSubmit = (data: InsertClient) => {
+    console.log("Form submitted with data:", data);
     mutation.mutate(data);
   };
 
