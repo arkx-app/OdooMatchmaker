@@ -21,6 +21,7 @@ Preferred communication style: Simple, everyday language.
 - **Styling:** Tailwind CSS with custom design tokens
 - **Animations:** Framer Motion for swipe gestures and transitions
 - **Forms:** React Hook Form with Zod schema validation
+- **Charts:** Recharts for analytics dashboards
 
 **Design System:**
 The application implements a dual-identity design system with distinct visual treatments:
@@ -29,12 +30,22 @@ The application implements a dual-identity design system with distinct visual tr
 - **Typography:** Inter or Plus Jakarta Sans for headings, DM Sans for body text
 - **Component Library:** Custom shadcn/ui components with "new-york" style variant
 
+**Key Frontend Pages:**
+- **Split Page (`/`):** Two-sided choice between client and partner roles
+- **Auth Pages:** Login, signup with role-based registration
+- **Client Brief Form (`/client/briefs`):** Create detailed project briefs with module selection
+- **Partner Dashboard (`/partner/dashboard`):** View incoming client briefs, accept/decline matches
+- **Messaging (`/messages/:id`):** Real-time DM system between matched clients and partners
+- **Partner Analytics (`/partner/analytics`):** ROI dashboard with conversion metrics and project value tracking
+- **Client Swipe (`/client/swipe`):** Original Tinder-style matching interface
+
 **Key Frontend Patterns:**
 - Component-based architecture with reusable UI primitives
 - Form validation using Zod schemas shared between client and server
 - Optimistic UI updates with React Query mutations
 - Responsive design with mobile-first approach
 - Card-stacking animation system for swipe interface using Framer Motion's motion values and transforms
+- localStorage-based session management for demo (auth would be JWT-based in production)
 
 ### Backend Architecture
 
@@ -52,16 +63,54 @@ The application implements a dual-identity design system with distinct visual tr
 
 **API Design:**
 RESTful API endpoints organized by resource:
-- `GET /api/partners` - Retrieve all partner profiles for swiping
-- `POST /api/clients` - Create new client profile
-- `POST /api/partners` - Create new partner profile  
-- `POST /api/matches` - Record swipe decisions and detect mutual matches
+
+**Authentication:**
+- `POST /api/auth/register` - User registration with role-based profile creation
+- `POST /api/auth/login` - User login with profile retrieval
+
+**Partners:**
+- `GET /api/partners` - Retrieve all partner profiles
+- `GET /api/partners/:id` - Get specific partner profile
+- `POST /api/partners` - Create new partner profile
+- `PATCH /api/partners/:id` - Update partner profile
+
+**Clients & Briefs:**
+- `POST /api/briefs` - Create new client brief (auto-triggers matching)
+- `GET /api/briefs/:id` - Retrieve specific brief
+- `GET /api/briefs/:id/matches` - Get AI-scored matches for a brief
+- `GET /api/clients/:clientId/briefs` - List all briefs for a client
+
+**Matches & Pipeline:**
+- `GET /api/matches/partner/:partnerId` - Partner's incoming leads
+- `GET /api/matches/client/:clientId` - Client's swipes and matches
+- `POST /api/matches` - Create new match record
+- `PATCH /api/matches/:id` - Update match status (accepted/rejected/converted)
+
+**Messaging:**
+- `POST /api/messages` - Send message between matched users
+- `GET /api/messages/match/:matchId` - Retrieve conversation history
+- `POST /api/messages/match/:matchId/read` - Mark messages as read
+
+**Projects:**
+- `POST /api/projects` - Create project from converted match
+- `GET /api/projects/partner/:partnerId` - Partner's active projects
+- `PATCH /api/projects/:id` - Update project status/completion
+
+**Analytics:**
+- `GET /api/analytics/partner/:partnerId` - Partner ROI metrics (matches sent, conversions, total value)
 
 **Business Logic:**
 - In-memory storage implementation (MemStorage) with interface-based design allowing easy migration to database persistence
 - Seeded sample partner data for demonstration
-- Match detection algorithm that identifies mutual interest between clients and partners
+- **Advanced matching algorithm** with weighted scoring:
+  - Module fit (30%): Technical skills match
+  - Industry experience (25%): Prior projects in same sector
+  - Budget fit (20%): Rate alignment with project budget
+  - Capacity (10%): Availability to take on project
+  - Rating (15%): Partner reputation score
+  - Returns top 10 matches with explainable reasons
 - UUID-based entity identification
+- Deterministic client-to-partner matching for demo (rule-based with hash function)
 
 ### Data Storage
 
