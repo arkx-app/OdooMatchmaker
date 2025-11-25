@@ -1,10 +1,127 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertPartnerSchema, insertClientSchema, insertMatchSchema } from "@shared/schema";
+import { 
+  insertPartnerSchema, insertClientSchema, insertMatchSchema, insertUserSchema,
+  insertBriefSchema, insertMessageSchema, insertProjectSchema
+} from "@shared/schema";
+
+// Simple matching algorithm
+function calculateMatchScore(brief: any, partner: any): { score: number; breakdown: any; reasons: string[] } {
+  const breakdown: any = {};
+  const reasons: string[] = [];
+  let score = 0;
+
+  // Module fit (30%)
+  const briefModules = (brief.modules || []).map((m: string) => m.toLowerCase());
+  const partnerServices = (partner.services || []).map((s: string) => s.toLowerCase());
+  const moduleMatches = briefModules.filter((m: string) => 
+    partnerServices.some((s: string) => s.includes(m) || m.includes(s))
+  ).length;
+  const moduleFit = briefModules.length > 0 ? (moduleMatches / briefModules.length) * 100 : 50;
+  breakdown.moduleFit = Math.round(moduleFit);
+  score += moduleFit * 0.3;
+
+  // Industry match (25%)
+  const industryMatch = partner.industry.toLowerCase() === brief.clientId ? 50 : 
+                       partner.industry.toLowerCase().includes(brief.clientId?.substring(0, 3)) ? 70 : 40;
+  breakdown.industryMatch = industryMatch;
+  score += industryMatch * 0.25;
+
+  // Budget fit (20%)
+  const partnerAvgRate = (partner.hourlyRateMin + partner.hourlyRateMax) / 2 / 100; // normalize
+  const budgetFit = Math.min(100, 50 + (50 - Math.abs(50 - partnerAvgRate)) * 0.5);
+  breakdown.budgetFit = Math.round(budgetFit);
+  score += budgetFit * 0.2;
+
+  // Capacity (10%)
+  const capacityScore = partner.capacity === "available" ? 100 : partner.capacity === "limited" ? 60 : 30;
+  breakdown.capacity = capacityScore;
+  score += capacityScore * 0.1;
+
+  // Rating (15%)
+  const ratingScore = (partner.rating || 3) * 20; // 1-5 star to 20-100
+  breakdown.rating = ratingScore;
+  score += ratingScore * 0.15;
+
+  // Generate reasons
+  if (breakdown.moduleFit > 70) reasons.push(`Strong module match (${moduleMatches}/${briefModules.length})`);
+  if (breakdown.industryMatch > 60) reasons.push(`Experience in ${partner.industry}`);
+  if (breakdown.budgetFit > 70) reasons.push(`Budget-aligned rates`);
+  if (breakdown.capacity === 100) reasons.push(`Available to start immediately`);
+  if (breakdown.rating >= 80) reasons.push(`${partner.rating}-star rated partner`);
+
+  return {
+    score: Math.round(score),
+    breakdown,
+    reasons: reasons.length > 0 ? reasons : ["Good overall match"],
+  };
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Get all partners for swiping
+  // === AUTH ===
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const validatedUser = insertUserSchema.parse(req.body);
+      
+      // Check if email exists
+      const existing = await storage.getUserByEmail(validatedUser.email);
+      if (existing) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+
+      const user = await storage.createUser(validatedUser);
+      
+      // Create profile based on role
+      if (validatedUser.role === "partner") {
+        const partner = await storage.createPartner({
+          userId: user.id,
+          name: validatedUser.name,
+          email: validatedUser.email,
+          company: req.body.company || "",
+          industry: req.body.industry || "",
+          services: req.body.services || [],
+        });
+        return res.status(201).json({ user, profile: partner });
+      } else {
+        const client = await storage.createClient({
+          userId: user.id,
+          name: validatedUser.name,
+          email: validatedUser.email,
+          company: req.body.company || "",
+          industry: req.body.industry || "",
+          budget: req.body.budget || "not-specified",
+        });
+        return res.status(201).json({ user, profile: client });
+      }
+    } catch (error) {
+      res.status(400).json({ message: "Invalid registration data", error });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user || user.password !== password) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Get profile
+      if (user.role === "partner") {
+        const profile = await storage.getPartnerByUserId(user.id);
+        return res.json({ user, profile });
+      } else {
+        const profile = await storage.getClientByUserId(user.id);
+        return res.json({ user, profile });
+      }
+    } catch (error) {
+      res.status(400).json({ message: "Login failed", error });
+    }
+  });
+
+  // === PARTNERS ===
   app.get("/api/partners", async (_req, res) => {
     try {
       const partners = await storage.getAllPartners();
@@ -14,18 +131,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create a new client profile
-  app.post("/api/clients", async (req, res) => {
+  app.get("/api/partners/:id", async (req, res) => {
     try {
-      const validatedData = insertClientSchema.parse(req.body);
-      const client = await storage.createClient(validatedData);
-      res.status(201).json(client);
+      const partner = await storage.getPartner(req.params.id);
+      if (!partner) return res.status(404).json({ message: "Partner not found" });
+      res.json(partner);
     } catch (error) {
-      res.status(400).json({ message: "Invalid client data", error });
+      res.status(500).json({ message: "Failed to fetch partner" });
     }
   });
 
-  // Create a new partner profile
   app.post("/api/partners", async (req, res) => {
     try {
       const validatedData = insertPartnerSchema.parse(req.body);
@@ -36,64 +151,236 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Record a match/like and detect mutual matches
+  app.patch("/api/partners/:id", async (req, res) => {
+    try {
+      const partner = await storage.updatePartner(req.params.id, req.body);
+      if (!partner) return res.status(404).json({ message: "Partner not found" });
+      res.json(partner);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update partner", error });
+    }
+  });
+
+  // === CLIENTS ===
+  app.post("/api/clients", async (req, res) => {
+    try {
+      const validatedData = insertClientSchema.parse(req.body);
+      const client = await storage.createClient(validatedData);
+      res.status(201).json(client);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid client data", error });
+    }
+  });
+
+  app.get("/api/clients/:id", async (req, res) => {
+    try {
+      const client = await storage.getClient(req.params.id);
+      if (!client) return res.status(404).json({ message: "Client not found" });
+      res.json(client);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch client" });
+    }
+  });
+
+  // === BRIEFS ===
+  app.post("/api/briefs", async (req, res) => {
+    try {
+      const validatedData = insertBriefSchema.parse(req.body);
+      const brief = await storage.createBrief(validatedData);
+      
+      // Auto-generate matches for this brief
+      const partners = await storage.getAllPartners();
+      const matches = partners
+        .map(partner => {
+          const { score, breakdown, reasons } = calculateMatchScore(validatedData, partner);
+          return {
+            briefId: brief.id,
+            clientId: validatedData.clientId,
+            partnerId: partner.id,
+            score,
+            scoreBreakdown: breakdown,
+            reasons,
+            status: "suggested" as const,
+          };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10); // Top 10 matches
+
+      for (const matchData of matches) {
+        await storage.createMatch(matchData);
+      }
+
+      res.status(201).json({ brief, matches });
+    } catch (error) {
+      res.status(400).json({ message: "Invalid brief data", error });
+    }
+  });
+
+  app.get("/api/briefs/:id", async (req, res) => {
+    try {
+      const brief = await storage.getBrief(req.params.id);
+      if (!brief) return res.status(404).json({ message: "Brief not found" });
+      res.json(brief);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch brief" });
+    }
+  });
+
+  app.get("/api/briefs/:id/matches", async (req, res) => {
+    try {
+      const matches = await storage.getMatchesByBrief(req.params.id);
+      const enriched = await Promise.all(
+        matches.map(async (m) => ({
+          ...m,
+          partner: await storage.getPartner(m.partnerId),
+        }))
+      );
+      res.json(enriched);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch matches" });
+    }
+  });
+
+  app.get("/api/clients/:clientId/briefs", async (req, res) => {
+    try {
+      const briefs = await storage.getBriefsByClient(req.params.clientId);
+      res.json(briefs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch briefs" });
+    }
+  });
+
+  // === MATCHES ===
+  app.get("/api/matches/partner/:partnerId", async (req, res) => {
+    try {
+      const matches = await storage.getMatchesByPartner(req.params.partnerId);
+      const enriched = await Promise.all(
+        matches.map(async (m) => ({
+          ...m,
+          brief: await storage.getBrief(m.briefId),
+          client: await storage.getClient(m.clientId),
+        }))
+      );
+      res.json(enriched);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch matches" });
+    }
+  });
+
+  app.get("/api/matches/client/:clientId", async (req, res) => {
+    try {
+      const matches = await storage.getMatchesByClient(req.params.clientId);
+      const enriched = await Promise.all(
+        matches.map(async (m) => ({
+          ...m,
+          partner: await storage.getPartner(m.partnerId),
+        }))
+      );
+      res.json(enriched);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch matches" });
+    }
+  });
+
   app.post("/api/matches", async (req, res) => {
     try {
       const validatedData = insertMatchSchema.parse(req.body);
-      const { clientId, partnerId, liked } = validatedData;
-      
-      // Check if this exact match already exists
-      const existingMatch = await storage.getMatch(clientId, partnerId);
-      if (existingMatch) {
-        return res.json(existingMatch);
-      }
-      
-      // Create the match record
       const match = await storage.createMatch(validatedData);
-      
-      // If the client liked the partner, determine if partner likes back
-      // In a full implementation, partners would also swipe/like clients
-      // For this MVP demo, we use a deterministic algorithm based on partner rating
-      if (liked) {
-        const partner = await storage.getPartner(partnerId);
-        
-        if (partner) {
-          // Deterministic match algorithm based on partner rating and IDs
-          // Create a deterministic hash from clientId + partnerId
-          const hashInput = `${clientId}-${partnerId}`;
-          let hash = 0;
-          for (let i = 0; i < hashInput.length; i++) {
-            hash = ((hash << 5) - hash) + hashInput.charCodeAt(i);
-            hash = hash & hash; // Convert to 32-bit integer
-          }
-          const normalizedHash = Math.abs(hash % 100); // 0-99
-          
-          // Partner rating determines selectivity threshold
-          // 5-star partners: only match if hash < 20 (20% of clients)
-          // 4-star partners: match if hash < 40 (40% of clients)
-          // 3-star or lower (including null/undefined): match if hash < 60 (60% of clients)
-          let threshold = 60; // default for 3-star or lower
-          
-          if (partner.rating === 5) {
-            threshold = 20;
-          } else if (partner.rating === 4) {
-            threshold = 40;
-          } // All other cases (3, 2, 1, 0, null, undefined) use default 60
-          
-          // Deterministic match: same client + partner always produces same result
-          const partnerLikesBack = normalizedHash < threshold;
-          
-          if (partnerLikesBack) {
-            // Update match to indicate mutual match
-            const updatedMatch = await storage.updateMatch(match.id, { matched: true });
-            return res.status(201).json(updatedMatch);
-          }
-        }
-      }
-      
       res.status(201).json(match);
     } catch (error) {
       res.status(400).json({ message: "Invalid match data", error });
+    }
+  });
+
+  app.patch("/api/matches/:id", async (req, res) => {
+    try {
+      const match = await storage.updateMatch(req.params.id, {
+        ...req.body,
+        respondedAt: req.body.status ? new Date() : undefined,
+      });
+      if (!match) return res.status(404).json({ message: "Match not found" });
+      res.json(match);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update match", error });
+    }
+  });
+
+  // === MESSAGES ===
+  app.post("/api/messages", async (req, res) => {
+    try {
+      const validatedData = insertMessageSchema.parse(req.body);
+      const message = await storage.createMessage(validatedData);
+      res.status(201).json(message);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid message data", error });
+    }
+  });
+
+  app.get("/api/messages/match/:matchId", async (req, res) => {
+    try {
+      const messages = await storage.getMessagesByMatch(req.params.matchId);
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  app.post("/api/messages/match/:matchId/read", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      await storage.markMessagesAsRead(req.params.matchId, userId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ message: "Failed to mark messages as read", error });
+    }
+  });
+
+  // === PROJECTS ===
+  app.post("/api/projects", async (req, res) => {
+    try {
+      const validatedData = insertProjectSchema.parse(req.body);
+      const project = await storage.createProject(validatedData);
+      // Update match status
+      const matchId = validatedData.matchId;
+      if (matchId) {
+        const matches = Array.from((await storage as any).matches?.values?.() || []);
+        const match = matches.find((m: any) => m.id === matchId);
+        if (match) {
+          await storage.updateMatch(matchId, { status: "converted" });
+        }
+      }
+      res.status(201).json(project);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid project data", error });
+    }
+  });
+
+  app.get("/api/projects/partner/:partnerId", async (req, res) => {
+    try {
+      const projects = await storage.getProjectsByPartner(req.params.partnerId);
+      res.json(projects);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch projects" });
+    }
+  });
+
+  app.patch("/api/projects/:id", async (req, res) => {
+    try {
+      const project = await storage.updateProject(req.params.id, req.body);
+      if (!project) return res.status(404).json({ message: "Project not found" });
+      res.json(project);
+    } catch (error) {
+      res.status(400).json({ message: "Failed to update project", error });
+    }
+  });
+
+  // === ANALYTICS ===
+  app.get("/api/analytics/partner/:partnerId", async (req, res) => {
+    try {
+      const metrics = await storage.getPartnerMetrics(req.params.partnerId);
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch analytics" });
     }
   });
 
