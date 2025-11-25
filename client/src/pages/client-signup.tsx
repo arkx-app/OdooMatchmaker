@@ -71,8 +71,12 @@ export default function ClientSignup() {
   });
 
   const mutation = useMutation({
-    mutationFn: (data: InsertClient) => apiRequest("POST", "/api/clients", data),
-    onSuccess: () => {
+    mutationFn: async (data: InsertClient) => {
+      const response = await apiRequest("POST", "/api/clients", data);
+      return await response.json();
+    },
+    onSuccess: (responseData: any) => {
+      localStorage.setItem("clientProfile", JSON.stringify(responseData));
       setSuccess(true);
       toast({
         title: "Welcome aboard!",

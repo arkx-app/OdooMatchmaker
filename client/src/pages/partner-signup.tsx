@@ -54,13 +54,20 @@ export default function PartnerSignup() {
   });
 
   const mutation = useMutation({
-    mutationFn: (data: InsertPartner) => apiRequest("POST", "/api/partners", data),
-    onSuccess: () => {
+    mutationFn: async (data: InsertPartner) => {
+      const response = await apiRequest("POST", "/api/partners", data);
+      return await response.json();
+    },
+    onSuccess: (responseData: any) => {
+      localStorage.setItem("partnerProfile", JSON.stringify(responseData));
       setSuccess(true);
       toast({
         title: "Partner profile created!",
         description: "You're now part of our network.",
       });
+      setTimeout(() => {
+        window.location.href = "/partner/dashboard";
+      }, 2000);
     },
     onError: () => {
       toast({
@@ -107,13 +114,8 @@ export default function PartnerSignup() {
           </div>
           <h2 className="text-3xl font-bold">Welcome to the Network!</h2>
           <p className="text-muted-foreground">
-            Your partner profile has been created. You'll start receiving client matches soon.
+            Redirecting you to your dashboard to start receiving client matches...
           </p>
-          <Link href="/">
-            <Button className="w-full bg-gradient-to-r from-partner-from to-partner-to hover:opacity-90" data-testid="button-home">
-              Back to Home
-            </Button>
-          </Link>
         </Card>
       </div>
     );
