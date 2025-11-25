@@ -44,11 +44,12 @@ export default function PartnerSignup() {
 
   const form = useForm<InsertPartner>({
     resolver: zodResolver(insertPartnerSchema),
+    mode: "onBlur",
     defaultValues: {
       name: "",
       email: "",
       company: "",
-      industry: "",
+      industry: "Technology",
       services: [],
     },
   });

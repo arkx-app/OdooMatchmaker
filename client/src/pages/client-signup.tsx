@@ -59,14 +59,15 @@ export default function ClientSignup() {
 
   const form = useForm<InsertClient>({
     resolver: zodResolver(insertClientSchema),
+    mode: "onBlur",
     defaultValues: {
       name: "",
       email: "",
       company: "",
-      industry: "",
-      budget: "",
-      projectTimeline: "",
-      odooModules: "",
+      industry: "Technology",
+      budget: "$50,000 - $100,000",
+      projectTimeline: "Soon (3-6 months)",
+      odooModules: "CRM",
     },
   });
 

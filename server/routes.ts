@@ -143,10 +143,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/partners", async (req, res) => {
     try {
-      const validatedData = insertPartnerSchema.parse(req.body);
+      const dataWithUserId = {
+        ...req.body,
+        userId: req.body.userId || `user-${Date.now()}`,
+      };
+      const validatedData = insertPartnerSchema.parse(dataWithUserId);
       const partner = await storage.createPartner(validatedData);
       res.status(201).json(partner);
     } catch (error) {
+      console.error("Partner creation error:", error);
       res.status(400).json({ message: "Invalid partner data", error });
     }
   });
@@ -164,10 +169,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === CLIENTS ===
   app.post("/api/clients", async (req, res) => {
     try {
-      const validatedData = insertClientSchema.parse(req.body);
+      const dataWithUserId = {
+        ...req.body,
+        userId: req.body.userId || `user-${Date.now()}`,
+      };
+      const validatedData = insertClientSchema.parse(dataWithUserId);
       const client = await storage.createClient(validatedData);
       res.status(201).json(client);
     } catch (error) {
+      console.error("Client creation error:", error);
       res.status(400).json({ message: "Invalid client data", error });
     }
   });
