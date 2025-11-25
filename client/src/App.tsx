@@ -13,7 +13,7 @@ import PartnerSignup from "@/pages/partner-signup";
 import Pricing from "@/pages/pricing";
 import AuthLogin from "@/pages/auth-login";
 import ClientBrief from "@/pages/client-brief";
-import PartnerDashboard from "@/pages/partner-dashboard";
+import PartnerDashboard from "@/pages/partner-dashboard-gamified";
 import Messaging from "@/pages/messaging";
 import PartnerAnalytics from "@/pages/partner-analytics";
 

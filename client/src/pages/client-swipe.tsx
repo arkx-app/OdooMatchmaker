@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { X, Heart, ArrowLeft, Sparkles } from "lucide-react";
+import { X, Heart, ArrowLeft, Sparkles, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -8,7 +8,37 @@ import { Link } from "wouter";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
 import type { Partner } from "@shared/schema";
 import MatchModal from "@/components/match-modal";
+import GuideBot from "@/components/guide-bot";
+import { AchievementsList } from "@/components/achievement-badge";
+import { useGamification } from "@/hooks/use-gamification";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+
+const CLIENT_GUIDE_STEPS = [
+  {
+    id: "welcome",
+    title: "Welcome to Client Matching!",
+    message: "Swipe right to like a partner or left to skip. When you both like each other, you'll get a match!",
+    action: "Use the heart and X buttons below to get started",
+  },
+  {
+    id: "profile_review",
+    title: "Review Profiles Carefully",
+    message: "Check each partner's services, industry experience, and ratings before making your decision.",
+    action: "Look for partners that match your project needs",
+  },
+  {
+    id: "matching_rewards",
+    title: "Earn Achievements",
+    message: "Complete swipes and get matches to unlock badges and earn points!",
+    action: "View your achievements in the sidebar",
+  },
+  {
+    id: "messaging",
+    title: "Start Conversations",
+    message: "Once matched, you can message the partner to discuss project details.",
+    action: "Look for the message button on matched profiles",
+  },
+];
 
 export default function ClientSwipe() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -16,6 +46,8 @@ export default function ClientSwipe() {
   const [matchedPartner, setMatchedPartner] = useState<Partner | null>(null);
   const [direction, setDirection] = useState<"left" | "right" | null>(null);
   const [clientId] = useState(() => `client-${Date.now()}`);
+  const { stats, recordSwipe, recordMatch, newAchievements } = useGamification("clientGamification");
+  const [showAchievements, setShowAchievements] = useState(false);
 
   const { data: partners = [], isLoading } = useQuery<Partner[]>({
     queryKey: ["/api/partners"],
@@ -23,6 +55,7 @@ export default function ClientSwipe() {
 
   const likeMutation = useMutation({
     mutationFn: async ({ partnerId, liked }: { partnerId: string; liked: boolean }) => {
+      recordSwipe(liked);
       const response = await apiRequest("POST", "/api/matches", {
         clientId,
         partnerId,
@@ -32,6 +65,7 @@ export default function ClientSwipe() {
     },
     onSuccess: (data: any) => {
       if (data.matched) {
+        recordMatch();
         const partner = partners.find(p => p.id === data.partnerId);
         if (partner) {
           setTimeout(() => {
@@ -103,6 +137,7 @@ export default function ClientSwipe() {
             <Sparkles className="w-10 h-10 text-primary" />
           </div>
           <h2 className="text-3xl font-bold">You've seen all partners!</h2>
+          <p className="text-muted-foreground">Total Swipes: {stats.totalSwipes} | Likes: {stats.totalLikes} | Matches: {stats.totalMatches}</p>
           <p className="text-muted-foreground text-lg">
             Check back later for new matches, or explore our pricing plans to unlock premium features.
           </p>
@@ -132,14 +167,20 @@ export default function ClientSwipe() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <h1 className="text-xl font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent">
-            Odoo Matchmaker
-          </h1>
-          <Link href="/pricing">
-            <Button variant="ghost" size="sm" data-testid="button-header-pricing">
-              Pricing
-            </Button>
-          </Link>
+          <div className="text-center flex-1">
+            <h1 className="text-xl font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent">
+              Odoo Matchmaker
+            </h1>
+            <p className="text-xs text-muted-foreground">Swipes: {stats.totalSwipes} | Points: {stats.totalPoints}</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowAchievements(!showAchievements)}
+            data-testid="button-achievements"
+          >
+            <Award className="w-5 h-5" />
+          </Button>
         </div>
       </header>
 
@@ -264,10 +305,37 @@ export default function ClientSwipe() {
         </div>
       </main>
 
+      {/* Achievements Sidebar */}
+      {showAchievements && (
+        <div className="fixed left-0 top-0 bottom-0 w-96 bg-card border-r shadow-lg overflow-y-auto pt-20 z-40">
+          <div className="p-6">
+            <AchievementsList achievements={stats.achievements} />
+          </div>
+        </div>
+      )}
+
+      {/* New Achievement Popup */}
+      {newAchievements.map((achievement) => (
+        <div
+          key={achievement.id}
+          className="fixed top-20 right-6 bg-gradient-to-r from-yellow-400 to-orange-400 text-white p-4 rounded-lg shadow-lg z-50 animate-bounce"
+          data-testid={`achievement-popup-${achievement.id}`}
+        >
+          <p className="font-bold">{achievement.name}</p>
+          <p className="text-sm">+{achievement.points} points</p>
+        </div>
+      ))}
+
       <MatchModal
         open={showMatch}
         onClose={() => setShowMatch(false)}
         partner={matchedPartner}
+      />
+
+      {/* Guide Bot */}
+      <GuideBot 
+        steps={CLIENT_GUIDE_STEPS} 
+        isPartner={false}
       />
     </div>
   );
