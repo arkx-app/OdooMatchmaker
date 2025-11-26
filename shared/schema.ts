@@ -62,7 +62,10 @@ export const clients = pgTable("clients", {
   companySize: text("company_size"), // 'startup', 'smb', 'enterprise'
   budget: text("budget").notNull(),
   projectTimeline: text("project_timeline"),
-  odooModules: text("odoo_modules"),
+  odooModules: text("odoo_modules").array(), // Multiple modules as array
+  website: text("website"), // Company website
+  odooExperience: text("odoo_experience"), // 'none', 'beginner', 'intermediate', 'advanced'
+  urgency: text("urgency"), // 'asap', 'soon', 'flexible', 'exploratory'
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -174,8 +177,11 @@ export const insertClientSchema = createInsertSchema(clients).omit({
   createdAt: true,
 }).extend({
   projectTimeline: z.string().optional(),
-  odooModules: z.string().optional(),
+  odooModules: z.array(z.string()).optional(),
   companySize: z.string().optional(),
+  website: z.string().optional(),
+  odooExperience: z.string().optional(),
+  urgency: z.string().optional(),
 });
 
 export const insertBriefSchema = createInsertSchema(briefs).omit({

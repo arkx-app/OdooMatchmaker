@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle2, Mail, Lock, User } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Mail, Lock, User, Globe, X } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -49,8 +51,27 @@ const odooModules = [
   "Manufacturing",
   "E-commerce",
   "Project Management",
+  "Purchase",
+  "Point of Sale",
+  "Website Builder",
+  "Marketing Automation",
+  "Helpdesk",
+  "Field Service",
   "Custom Modules",
-  "Other",
+];
+
+const odooExperienceLevels = [
+  { value: "none", label: "No experience - New to Odoo" },
+  { value: "beginner", label: "Beginner - Basic understanding" },
+  { value: "intermediate", label: "Intermediate - Used Odoo before" },
+  { value: "advanced", label: "Advanced - Extensive Odoo experience" },
+];
+
+const urgencyLevels = [
+  { value: "asap", label: "ASAP - Need it immediately" },
+  { value: "soon", label: "Soon - Within the next month" },
+  { value: "flexible", label: "Flexible - No rush, within 3 months" },
+  { value: "exploratory", label: "Exploratory - Just researching options" },
 ];
 
 const clientSignupSchema = z.object({
@@ -60,10 +81,13 @@ const clientSignupSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
   company: z.string().min(1, "Company name is required"),
+  website: z.string().optional(),
   industry: z.string().min(1, "Industry is required"),
   budget: z.string().min(1, "Budget is required"),
   projectTimeline: z.string().optional(),
-  odooModules: z.string().optional(),
+  odooModules: z.array(z.string()).min(1, "Please select at least one module"),
+  odooExperience: z.string().min(1, "Please select your experience level"),
+  urgency: z.string().min(1, "Please select your urgency level"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -87,10 +111,13 @@ export default function ClientSignup() {
       password: "",
       confirmPassword: "",
       company: "",
+      website: "",
       industry: "Technology",
       budget: "$50,000 - $100,000",
       projectTimeline: "Soon (3-6 months)",
-      odooModules: "CRM",
+      odooModules: [],
+      odooExperience: "",
+      urgency: "",
     },
   });
 
@@ -116,10 +143,13 @@ export default function ClientSignup() {
       const profileResponse = await apiRequest("POST", "/api/auth/complete-signup", {
         role: "client",
         company: data.company,
+        website: data.website || null,
         industry: data.industry,
         budget: data.budget,
         projectTimeline: data.projectTimeline || null,
-        odooModules: data.odooModules || null,
+        odooModules: data.odooModules,
+        odooExperience: data.odooExperience,
+        urgency: data.urgency,
       });
       
       if (!profileResponse.ok) {
@@ -330,6 +360,24 @@ export default function ClientSignup() {
 
                   <FormField
                     control={form.control}
+                    name="website"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company Website</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="https://yourcompany.com" className="pl-10" {...field} data-testid="input-website" />
+                          </div>
+                        </FormControl>
+                        <FormDescription>Optional - helps partners learn about your business</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
                     name="industry"
                     render={({ field }) => (
                       <FormItem>
@@ -380,27 +428,93 @@ export default function ClientSignup() {
                 </div>
 
                 <div className="border-t pt-6 space-y-4">
-                  <h3 className="text-lg font-semibold">Project Details</h3>
+                  <h3 className="text-lg font-semibold">Odoo Modules Needed</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Select all the modules you need for your project
+                  </p>
+
+                  <FormField
+                    control={form.control}
+                    name="odooModules"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Modules</FormLabel>
+                        <div className="space-y-3">
+                          {field.value && field.value.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {field.value.map((module) => (
+                                <Badge key={module} variant="secondary" className="gap-1">
+                                  {module}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      field.onChange(field.value?.filter((m) => m !== module) || []);
+                                    }}
+                                    className="ml-1 rounded-full hover:bg-muted"
+                                    data-testid={`button-remove-module-${module}`}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {odooModules.map((module) => {
+                              const isSelected = field.value?.includes(module);
+                              return (
+                                <div key={module} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`module-${module}`}
+                                    checked={isSelected}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        field.onChange([...(field.value || []), module]);
+                                      } else {
+                                        field.onChange(field.value?.filter((m) => m !== module) || []);
+                                      }
+                                    }}
+                                    data-testid={`checkbox-module-${module}`}
+                                  />
+                                  <label
+                                    htmlFor={`module-${module}`}
+                                    className="text-sm cursor-pointer"
+                                  >
+                                    {module}
+                                  </label>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="border-t pt-6 space-y-4">
+                  <h3 className="text-lg font-semibold">Your Experience & Timeline</h3>
                   <p className="text-sm text-muted-foreground">
                     Help us match you with the right partners
                   </p>
 
                   <FormField
                     control={form.control}
-                    name="projectTimeline"
+                    name="odooExperience"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Project Timeline</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                        <FormLabel>Your Odoo Experience Level</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger data-testid="select-timeline">
-                              <SelectValue placeholder="When do you need this completed?" />
+                            <SelectTrigger data-testid="select-experience">
+                              <SelectValue placeholder="How familiar are you with Odoo?" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {projectTimelines.map((timeline) => (
-                              <SelectItem key={timeline} value={timeline}>
-                                {timeline}
+                            {odooExperienceLevels.map((level) => (
+                              <SelectItem key={level.value} value={level.value}>
+                                {level.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -412,20 +526,45 @@ export default function ClientSignup() {
 
                   <FormField
                     control={form.control}
-                    name="odooModules"
+                    name="urgency"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Odoo Modules Needed</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                        <FormLabel>How Soon Do You Need This?</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger data-testid="select-modules">
-                              <SelectValue placeholder="Which modules do you need?" />
+                            <SelectTrigger data-testid="select-urgency">
+                              <SelectValue placeholder="What's your timeline?" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {odooModules.map((module) => (
-                              <SelectItem key={module} value={module}>
-                                {module}
+                            {urgencyLevels.map((level) => (
+                              <SelectItem key={level.value} value={level.value}>
+                                {level.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="projectTimeline"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Project Duration</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-timeline">
+                              <SelectValue placeholder="How long do you expect this project to take?" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {projectTimelines.map((timeline) => (
+                              <SelectItem key={timeline} value={timeline}>
+                                {timeline}
                               </SelectItem>
                             ))}
                           </SelectContent>

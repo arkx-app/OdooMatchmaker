@@ -103,6 +103,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         budget,
         projectTimeline,
         odooModules,
+        odooExperience,
+        urgency,
         hourlyRateMin,
         hourlyRateMax,
         capacity,
@@ -157,6 +159,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             budget: budget || "not-specified",
             projectTimeline: projectTimeline || null,
             odooModules: odooModules || null,
+            website: website || null,
+            odooExperience: odooExperience || null,
+            urgency: urgency || null,
           });
           return res.status(201).json({ user: { ...user, role }, profile: client });
         }
