@@ -36,6 +36,7 @@ export interface IStorage {
   getAllBriefs(): Promise<Brief[]>;
 
   getMatch(clientId: string, partnerId: string): Promise<Match | undefined>;
+  getMatchById(id: string): Promise<Match | undefined>;
   getMatchesByClient(clientId: string): Promise<Match[]>;
   getMatchesByPartner(partnerId: string): Promise<Match[]>;
   getMatchesByBrief(briefId: string): Promise<Match[]>;
@@ -225,6 +226,11 @@ export class DatabaseStorage implements IStorage {
       .from(matches)
       .where(eq(matches.clientId, clientId));
     return result.find(m => m.partnerId === partnerId);
+  }
+
+  async getMatchById(id: string): Promise<Match | undefined> {
+    const [match] = await db.select().from(matches).where(eq(matches.id, id));
+    return match;
   }
 
   async getMatchesByClient(clientId: string): Promise<Match[]> {

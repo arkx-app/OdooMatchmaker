@@ -96,8 +96,10 @@ export const matches = pgTable("matches", {
   reasons: text("reasons").array(), // explanations for the match
   status: text("status").default("suggested"), // 'suggested', 'sent', 'accepted', 'rejected', 'converted'
   clientLiked: boolean("client_liked"),
+  clientSaved: boolean("client_saved").default(false), // For "Saved Partners" feature
   partnerResponded: boolean("partner_responded").default(false),
   partnerAccepted: boolean("partner_accepted"),
+  meetingUrl: text("meeting_url"), // For booking intro calls
   createdAt: timestamp("created_at").defaultNow(),
   respondedAt: timestamp("responded_at"),
 });
@@ -201,6 +203,18 @@ export const insertMatchSchema = createInsertSchema(matches).omit({
 }).extend({
   scoreBreakdown: z.record(z.number()).optional(),
   reasons: z.array(z.string()).optional(),
+  clientSaved: z.boolean().optional(),
+  meetingUrl: z.string().optional(),
+});
+
+// Schema for updating matches (partial updates)
+export const updateMatchSchema = z.object({
+  clientLiked: z.boolean().optional(),
+  clientSaved: z.boolean().optional(),
+  status: z.enum(["suggested", "sent", "accepted", "rejected", "converted"]).optional(),
+  meetingUrl: z.string().optional(),
+  partnerAccepted: z.boolean().optional(),
+  partnerResponded: z.boolean().optional(),
 });
 
 export const insertMessageSchema = createInsertSchema(messages).omit({

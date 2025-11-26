@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, getCurrentUserId } from "./auth";
 import { 
   insertPartnerSchema, insertClientSchema, insertMatchSchema,
-  insertBriefSchema, insertMessageSchema, insertProjectSchema
+  insertBriefSchema, insertMessageSchema, insertProjectSchema,
+  updateMatchSchema
 } from "@shared/schema";
 
 function calculateMatchScore(brief: any, partner: any): { score: number; breakdown: any; reasons: string[] } {
@@ -377,11 +378,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/matches/:id", isAuthenticated, async (req, res) => {
     try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      // Get existing match to verify ownership
+      const existingMatch = await storage.getMatchById(req.params.id);
+      if (!existingMatch) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      // Get user's client/partner profile to verify ownership
+      const clientProfile = await storage.getClientByUserId(userId);
+      const partnerProfile = await storage.getPartnerByUserId(userId);
+
+      const isClient = clientProfile && existingMatch.clientId === clientProfile.id;
+      const isPartner = partnerProfile && existingMatch.partnerId === partnerProfile.id;
+
+      if (!isClient && !isPartner) {
+        return res.status(403).json({ message: "Not authorized to update this match" });
+      }
+
+      // Validate the update data
+      const validatedData = updateMatchSchema.parse(req.body);
+      
       const match = await storage.updateMatch(req.params.id, {
-        ...req.body,
-        respondedAt: req.body.status ? new Date() : undefined,
+        ...validatedData,
+        respondedAt: validatedData.status || validatedData.partnerAccepted !== undefined ? new Date() : undefined,
       });
-      if (!match) return res.status(404).json({ message: "Match not found" });
+      
       res.json(match);
     } catch (error) {
       res.status(400).json({ message: "Failed to update match", error });
