@@ -1,17 +1,37 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { LogOut, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 
 const modules = ["Accounting", "CRM", "Sales", "Inventory", "HR", "Manufacturing", "Website"];
+
+const industries = [
+  "Technology",
+  "Healthcare",
+  "Finance",
+  "Retail",
+  "Manufacturing",
+  "Education",
+  "Real Estate",
+  "Other",
+];
+
+const budgetRanges = [
+  "< $10,000",
+  "$10,000 - $25,000",
+  "$25,000 - $50,000",
+  "$50,000 - $100,000",
+  "> $100,000",
+];
 
 interface BriefsResponse {
   briefs: any[];
@@ -25,6 +45,21 @@ export default function ClientBrief() {
   const { isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    budget: "",
+    timelineWeeks: "",
+    modules: [] as string[],
+    painPoints: [] as string[],
+  });
+
+  const [profileData, setProfileData] = useState({
+    company: "",
+    industry: "Technology",
+    budget: "$50,000 - $100,000",
+  });
+
   const { data: briefsData, isLoading: briefsLoading } = useQuery<BriefsResponse>({
     queryKey: ["/api/my/briefs"],
     queryFn: async () => {
@@ -37,6 +72,37 @@ export default function ClientBrief() {
       return res.json();
     },
     enabled: isAuthenticated,
+  });
+
+  const profileMutation = useMutation({
+    mutationFn: async (data: typeof profileData) => {
+      const response = await apiRequest("POST", "/api/auth/complete-signup", {
+        role: "client",
+        company: data.company,
+        industry: data.industry,
+        budget: data.budget,
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Profile creation failed");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/my/briefs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Profile completed!",
+        description: "You can now create your project brief.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to complete profile",
+        variant: "destructive",
+      });
+    },
   });
 
   useEffect(() => {
@@ -57,14 +123,14 @@ export default function ClientBrief() {
     navigate("/");
   };
 
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    budget: "",
-    timelineWeeks: "",
-    modules: [] as string[],
-    painPoints: [] as string[],
-  });
+  const handleProfileSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileData.company) {
+      toast({ title: "Please enter your company name", variant: "destructive" });
+      return;
+    }
+    profileMutation.mutate(profileData);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,18 +184,98 @@ export default function ClientBrief() {
 
   if (!briefsData?.hasProfile) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <Card className="max-w-md w-full p-8 text-center space-y-6">
-          <h2 className="text-2xl font-bold">Complete Your Profile</h2>
-          <p className="text-muted-foreground">
-            Please complete your client profile before creating a project brief.
-          </p>
-          <Link href="/client/signup">
-            <Button className="w-full" data-testid="button-complete-profile">
-              Complete Profile
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-card sticky top-0 z-50 backdrop-blur-lg">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-2">
+            <Link href="/">
+              <Button variant="ghost" size="icon" data-testid="button-back-profile">
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            </Link>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent">
+              Complete Your Profile
+            </h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              data-testid="button-logout-profile"
+            >
+              <LogOut className="w-5 h-5" />
             </Button>
-          </Link>
-        </Card>
+          </div>
+        </header>
+        
+        <div className="max-w-md mx-auto px-4 py-12">
+          <div className="mb-8 text-center">
+            <h2 className="text-3xl font-bold mb-2">Almost There!</h2>
+            <p className="text-muted-foreground">
+              Complete your profile to start creating project briefs
+            </p>
+          </div>
+
+          <form onSubmit={handleProfileSubmit}>
+            <Card className="p-6 space-y-4">
+              <div>
+                <label className="text-sm font-medium">Company Name</label>
+                <Input
+                  placeholder="Acme Corporation"
+                  value={profileData.company}
+                  onChange={(e) => setProfileData({ ...profileData, company: e.target.value })}
+                  required
+                  data-testid="input-profile-company"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Industry</label>
+                <Select
+                  value={profileData.industry}
+                  onValueChange={(value) => setProfileData({ ...profileData, industry: value })}
+                >
+                  <SelectTrigger data-testid="select-profile-industry">
+                    <SelectValue placeholder="Select industry" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {industries.map((industry) => (
+                      <SelectItem key={industry} value={industry}>
+                        {industry}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Budget Range</label>
+                <Select
+                  value={profileData.budget}
+                  onValueChange={(value) => setProfileData({ ...profileData, budget: value })}
+                >
+                  <SelectTrigger data-testid="select-profile-budget">
+                    <SelectValue placeholder="Select budget" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {budgetRanges.map((budget) => (
+                      <SelectItem key={budget} value={budget}>
+                        {budget}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-gradient-to-r from-client-from to-client-to text-white"
+                disabled={profileMutation.isPending}
+                data-testid="button-complete-profile"
+              >
+                {profileMutation.isPending ? "Saving..." : "Complete Profile"}
+              </Button>
+            </Card>
+          </form>
+        </div>
       </div>
     );
   }
