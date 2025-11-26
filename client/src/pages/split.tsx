@@ -1,25 +1,44 @@
 import { useLocation } from "wouter";
 import { Users, Briefcase, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Split() {
   const [, setLocation] = useLocation();
+  const { isAuthenticated, isLoading } = useAuth();
   const searchParams = new URLSearchParams(window.location.search);
   const isSignup = searchParams.get("signup") === "true";
 
   const handleClientClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    setLocation(isSignup ? "/client/signup" : "/client-home");
+    if (isSignup) {
+      if (isAuthenticated) {
+        setLocation("/client/signup");
+      } else {
+        sessionStorage.setItem("pendingRole", "client");
+        window.location.href = "/api/login";
+      }
+    } else {
+      setLocation("/client-home");
+    }
   };
 
   const handlePartnerClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    setLocation(isSignup ? "/partner/signup" : "/partner-home");
+    if (isSignup) {
+      if (isAuthenticated) {
+        setLocation("/partner/signup");
+      } else {
+        sessionStorage.setItem("pendingRole", "partner");
+        window.location.href = "/api/login";
+      }
+    } else {
+      setLocation("/partner-home");
+    }
   };
   
   return (
     <div className="min-h-screen grid lg:grid-cols-2 grid-cols-1 relative">
-      {/* Go Back Button - Fixed position, high z-index, visible on both sides */}
       <div className="absolute top-6 left-6 z-[100]">
         <Button
           variant="outline"
@@ -58,7 +77,7 @@ export default function Split() {
             </div>
             
             <div className="flex items-center justify-center gap-2 text-white/80 text-lg">
-              <span>Start swiping</span>
+              <span>{isSignup ? "Sign up with Google, GitHub & more" : "Start swiping"}</span>
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </div>
           </div>
@@ -90,7 +109,7 @@ export default function Split() {
             </div>
             
             <div className="flex items-center justify-center gap-2 text-white/80 text-lg">
-              <span>Join our network</span>
+              <span>{isSignup ? "Sign up with Google, GitHub & more" : "Join our network"}</span>
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </div>
           </div>

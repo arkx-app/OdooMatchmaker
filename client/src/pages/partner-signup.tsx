@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -10,9 +10,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { insertPartnerSchema, type InsertPartner } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { z } from "zod";
 
 const industries = [
   "Technology",
@@ -36,18 +37,32 @@ const availableServices = [
   "Development",
 ];
 
+const partnerProfileSchema = z.object({
+  company: z.string().min(1, "Company name is required"),
+  industry: z.string().min(1, "Industry is required"),
+  services: z.array(z.string()).min(1, "At least one service is required"),
+});
+
+type PartnerProfileForm = z.infer<typeof partnerProfileSchema>;
+
 export default function PartnerSignup() {
   const { toast } = useToast();
   const [success, setSuccess] = useState(false);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [serviceInput, setServiceInput] = useState("");
+  const { user, isAuthenticated, isLoading } = useAuth();
 
-  const form = useForm<InsertPartner>({
-    resolver: zodResolver(insertPartnerSchema),
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      sessionStorage.setItem("pendingRole", "partner");
+      window.location.href = "/api/login";
+    }
+  }, [isLoading, isAuthenticated]);
+
+  const form = useForm<PartnerProfileForm>({
+    resolver: zodResolver(partnerProfileSchema),
     mode: "onBlur",
     defaultValues: {
-      name: "",
-      email: "",
       company: "",
       industry: "Technology",
       services: [],
@@ -55,12 +70,16 @@ export default function PartnerSignup() {
   });
 
   const mutation = useMutation({
-    mutationFn: async (data: InsertPartner) => {
-      const response = await apiRequest("POST", "/api/partners", data);
+    mutationFn: async (data: PartnerProfileForm) => {
+      const response = await apiRequest("POST", "/api/auth/complete-signup", {
+        role: "partner",
+        ...data,
+      });
       return await response.json();
     },
     onSuccess: (responseData: any) => {
       localStorage.setItem("partnerProfile", JSON.stringify(responseData));
+      sessionStorage.removeItem("pendingRole");
       setSuccess(true);
       toast({
         title: "Partner profile created!",
@@ -95,7 +114,7 @@ export default function PartnerSignup() {
     form.setValue("services", newServices);
   };
 
-  const onSubmit = (data: InsertPartner) => {
+  const onSubmit = (data: PartnerProfileForm) => {
     if (selectedServices.length === 0) {
       toast({
         title: "Services required",
@@ -104,9 +123,20 @@ export default function PartnerSignup() {
       });
       return;
     }
-    console.log("Form submitted with data:", { ...data, services: selectedServices });
     mutation.mutate({ ...data, services: selectedServices });
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   if (success) {
     return (
@@ -133,7 +163,7 @@ export default function PartnerSignup() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <h1 className="text-xl font-bold">Partner Sign Up</h1>
+          <h1 className="text-xl font-bold">Complete Your Profile</h1>
           <div className="w-10" />
         </div>
       </header>
@@ -145,41 +175,13 @@ export default function PartnerSignup() {
               Join Our Partner Network
             </h1>
             <p className="text-muted-foreground text-lg">
-              Connect with clients actively seeking Odoo expertise
+              Welcome{user?.firstName ? `, ${user.firstName}` : ''}! Tell us about your services
             </p>
           </div>
 
           <Card className="p-8">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Your Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Jane Smith" {...field} data-testid="input-name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email Address</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="jane@partner.com" {...field} data-testid="input-email" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name="company"

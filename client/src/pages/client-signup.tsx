@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -9,9 +9,10 @@ import { Card } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { insertClientSchema, type InsertClient } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { z } from "zod";
 
 const industries = [
   "Technology",
@@ -52,17 +53,33 @@ const odooModules = [
   "Other",
 ];
 
+const clientProfileSchema = z.object({
+  company: z.string().min(1, "Company name is required"),
+  industry: z.string().min(1, "Industry is required"),
+  budget: z.string().min(1, "Budget is required"),
+  projectTimeline: z.string().optional(),
+  odooModules: z.string().optional(),
+});
+
+type ClientProfileForm = z.infer<typeof clientProfileSchema>;
+
 export default function ClientSignup() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [success, setSuccess] = useState(false);
+  const { user, isAuthenticated, isLoading } = useAuth();
 
-  const form = useForm<InsertClient>({
-    resolver: zodResolver(insertClientSchema),
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      sessionStorage.setItem("pendingRole", "client");
+      window.location.href = "/api/login";
+    }
+  }, [isLoading, isAuthenticated]);
+
+  const form = useForm<ClientProfileForm>({
+    resolver: zodResolver(clientProfileSchema),
     mode: "onBlur",
     defaultValues: {
-      name: "",
-      email: "",
       company: "",
       industry: "Technology",
       budget: "$50,000 - $100,000",
@@ -72,12 +89,20 @@ export default function ClientSignup() {
   });
 
   const mutation = useMutation({
-    mutationFn: async (data: InsertClient) => {
-      const response = await apiRequest("POST", "/api/clients", data);
+    mutationFn: async (data: ClientProfileForm) => {
+      const response = await apiRequest("POST", "/api/auth/complete-signup", {
+        role: "client",
+        company: data.company,
+        industry: data.industry,
+        budget: data.budget,
+        projectTimeline: data.projectTimeline || null,
+        odooModules: data.odooModules || null,
+      });
       return await response.json();
     },
     onSuccess: (responseData: any) => {
       localStorage.setItem("clientProfile", JSON.stringify(responseData));
+      sessionStorage.removeItem("pendingRole");
       setSuccess(true);
       toast({
         title: "Welcome aboard!",
@@ -95,10 +120,21 @@ export default function ClientSignup() {
     },
   });
 
-  const onSubmit = (data: InsertClient) => {
-    console.log("Form submitted with data:", data);
+  const onSubmit = (data: ClientProfileForm) => {
     mutation.mutate(data);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   if (success) {
     return (
@@ -125,7 +161,7 @@ export default function ClientSignup() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <h1 className="text-xl font-bold">Client Sign Up</h1>
+          <h1 className="text-xl font-bold">Complete Your Profile</h1>
           <div className="w-10" />
         </div>
       </header>
@@ -137,41 +173,13 @@ export default function ClientSignup() {
               Find Your Perfect Partner
             </h1>
             <p className="text-muted-foreground text-lg">
-              Tell us about your business and we'll match you with qualified Odoo Partners
+              Welcome{user?.firstName ? `, ${user.firstName}` : ''}! Tell us about your business needs
             </p>
           </div>
 
           <Card className="p-8">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Your Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John Doe" {...field} data-testid="input-name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email Address</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="john@example.com" {...field} data-testid="input-email" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name="company"

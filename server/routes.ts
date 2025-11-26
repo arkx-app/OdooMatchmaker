@@ -81,12 +81,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/complete-signup', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { role, company, industry, services, budget } = req.body;
+      const { 
+        role, 
+        company, 
+        industry, 
+        services, 
+        budget,
+        projectTimeline,
+        odooModules,
+        hourlyRateMin,
+        hourlyRateMax,
+        capacity,
+        description,
+        certifications,
+        website
+      } = req.body;
+
+      if (!role || !['partner', 'client'].includes(role)) {
+        return res.status(400).json({ message: "Invalid role. Must be 'partner' or 'client'" });
+      }
 
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
+
+      const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User';
+      const userEmail = user.email || '';
 
       await storage.updateUserRole(userId, role);
 
@@ -95,11 +116,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!existingPartner) {
           const partner = await storage.createPartner({
             userId,
-            name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Partner',
-            email: user.email || '',
+            name: userName,
+            email: userEmail,
             company: company || "",
             industry: industry || "",
             services: services || [],
+            description: description || null,
+            hourlyRateMin: hourlyRateMin || 75,
+            hourlyRateMax: hourlyRateMax || 250,
+            capacity: capacity || "available",
+            certifications: certifications || [],
+            website: website || null,
           });
           return res.status(201).json({ user: { ...user, role }, profile: partner });
         }
@@ -109,11 +136,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!existingClient) {
           const client = await storage.createClient({
             userId,
-            name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Client',
-            email: user.email || '',
+            name: userName,
+            email: userEmail,
             company: company || "",
             industry: industry || "",
             budget: budget || "not-specified",
+            projectTimeline: projectTimeline || null,
+            odooModules: odooModules || null,
           });
           return res.status(201).json({ user: { ...user, role }, profile: client });
         }
