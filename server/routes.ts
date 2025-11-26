@@ -130,27 +130,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (role === "partner") {
         const existingPartner = await storage.getPartnerByUserId(userId);
         if (!existingPartner) {
-          const partner = await storage.createPartner({
+          const partnerData = {
             userId,
             name: userName,
             email: userEmail,
             company: company || "",
             industry: industry || "",
-            services: services || [],
+            services: Array.isArray(services) ? services : [],
             description: description || null,
             hourlyRateMin: hourlyRateMin || 75,
             hourlyRateMax: hourlyRateMax || 250,
             capacity: capacity || "available",
-            certifications: certifications || [],
+            certifications: Array.isArray(certifications) ? certifications : [],
             website: website || null,
-          });
+          };
+          const validatedPartnerData = insertPartnerSchema.parse(partnerData);
+          const partner = await storage.createPartner(validatedPartnerData);
           return res.status(201).json({ user: { ...user, role }, profile: partner });
         }
         return res.json({ user: { ...user, role }, profile: existingPartner });
       } else {
         const existingClient = await storage.getClientByUserId(userId);
         if (!existingClient) {
-          const client = await storage.createClient({
+          const clientData = {
             userId,
             name: userName,
             email: userEmail,
@@ -158,11 +160,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             industry: industry || "",
             budget: budget || "not-specified",
             projectTimeline: projectTimeline || null,
-            odooModules: odooModules || null,
+            odooModules: Array.isArray(odooModules) ? odooModules : [],
             website: website || null,
             odooExperience: odooExperience || null,
             urgency: urgency || null,
-          });
+          };
+          const validatedClientData = insertClientSchema.parse(clientData);
+          const client = await storage.createClient(validatedClientData);
           return res.status(201).json({ user: { ...user, role }, profile: client });
         }
         return res.json({ user: { ...user, role }, profile: existingClient });
