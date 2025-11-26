@@ -7,6 +7,7 @@ import {
   insertBriefSchema, insertMessageSchema, insertProjectSchema,
   updateMatchSchema
 } from "@shared/schema";
+import { seedPartners } from "./seed-data";
 
 function calculateMatchScore(brief: any, partner: any): { score: number; breakdown: any; reasons: string[] } {
   const breakdown: any = {};
@@ -485,6 +486,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+
+  seedPartners().catch(err => console.error("Failed to seed partners:", err));
 
   return httpServer;
 }

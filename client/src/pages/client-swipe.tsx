@@ -165,27 +165,45 @@ export default function ClientSwipe() {
     );
   }
 
-  if (currentIndex >= partners.length) {
+  if (currentIndex >= partners.length && partners.length > 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
         <div className="text-center space-y-6 max-w-md">
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-            <Sparkles className="w-10 h-10 text-primary" />
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center mx-auto">
+            <Sparkles className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-3xl font-bold">You've seen all partners!</h2>
-          <p className="text-muted-foreground">Total Swipes: {stats.totalSwipes} | Likes: {stats.totalLikes} | Matches: {stats.totalMatches}</p>
-          <p className="text-muted-foreground text-lg">
-            Check back later for new matches, or explore our pricing plans to unlock premium features.
+          <h2 className="text-3xl font-bold">Great job! You've reviewed all partners</h2>
+          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+            <p className="text-lg font-medium">Your Session Stats</p>
+            <div className="flex justify-center gap-6 text-sm">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{stats.totalSwipes}</p>
+                <p className="text-muted-foreground">Swipes</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-pink-500">{stats.totalLikes}</p>
+                <p className="text-muted-foreground">Likes</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-green-500">{stats.totalMatches}</p>
+                <p className="text-muted-foreground">Matches</p>
+              </div>
+            </div>
+          </div>
+          <p className="text-muted-foreground">
+            Head to your dashboard to manage your liked partners and matches.
           </p>
-          <div className="flex gap-4 justify-center pt-4">
-            <Link href="/">
-              <Button variant="outline" size="lg" data-testid="button-home">
-                Back to Home
-              </Button>
-            </Link>
-            <Link href="/pricing">
-              <Button size="lg" data-testid="button-pricing">
-                View Pricing
+          <div className="flex gap-4 justify-center pt-4 flex-wrap">
+            <Button 
+              size="lg" 
+              onClick={() => navigate("/client/dashboard")}
+              data-testid="button-dashboard"
+            >
+              Go to Dashboard
+            </Button>
+            <Link href="/client/briefs">
+              <Button variant="outline" size="lg" data-testid="button-create-brief">
+                Create Project Brief
               </Button>
             </Link>
           </div>
