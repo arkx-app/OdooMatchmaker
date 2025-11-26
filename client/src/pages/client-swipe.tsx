@@ -1,18 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { X, Heart, ArrowLeft, Sparkles, Award, LogOut } from "lucide-react";
+import { X, Heart, ArrowLeft, Sparkles, Award, LogOut, ThumbsUp, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link, useLocation } from "wouter";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
-import type { Partner } from "@shared/schema";
+import type { Partner, Match } from "@shared/schema";
 import MatchModal from "@/components/match-modal";
 import GuideBot from "@/components/guide-bot";
 import { AchievementsList } from "@/components/achievement-badge";
 import { useGamification } from "@/hooks/use-gamification";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+
+interface EnrichedMatch extends Match {
+  partner?: Partner;
+}
 
 const CLIENT_GUIDE_STEPS = [
   {
@@ -46,11 +51,18 @@ export default function ClientSwipe() {
   const [showMatch, setShowMatch] = useState(false);
   const [matchedPartner, setMatchedPartner] = useState<Partner | null>(null);
   const [direction, setDirection] = useState<"left" | "right" | null>(null);
-  const [clientId] = useState(() => `client-${Date.now()}`);
   const { stats, recordSwipe, recordMatch, newAchievements } = useGamification("clientGamification");
   const [showAchievements, setShowAchievements] = useState(false);
   const [, navigate] = useLocation();
-  const { logout } = useAuth();
+  const { logout, user, isLoading: authLoading, isAuthenticated } = useAuth();
+
+  const clientId = user?.profile?.id || "";
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/client/signup");
+    }
+  }, [authLoading, isAuthenticated, navigate]);
 
   const handleLogout = async () => {
     await logout();
@@ -61,6 +73,20 @@ export default function ClientSwipe() {
   const { data: partners = [], isLoading } = useQuery<Partner[]>({
     queryKey: ["/api/partners"],
   });
+
+  const { data: clientMatches = [] } = useQuery<EnrichedMatch[]>({
+    queryKey: ["/api/matches/client", clientId],
+    queryFn: async () => {
+      const res = await fetch(`/api/matches/client/${clientId}`, {
+        credentials: "include",
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!clientId,
+  });
+
+  const likedPartners = clientMatches.filter((m) => m.clientLiked && m.partner);
 
   const likeMutation = useMutation({
     mutationFn: async ({ partnerId, liked }: { partnerId: string; liked: boolean }) => {
@@ -73,6 +99,7 @@ export default function ClientSwipe() {
       return await response.json();
     },
     onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/matches/client", clientId] });
       if (data.matched) {
         recordMatch();
         const partner = partners.find(p => p.id === data.partnerId);
@@ -168,7 +195,7 @@ export default function ClientSwipe() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b bg-card sticky top-0 z-50 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-2">
           <Link href="/">
@@ -178,7 +205,7 @@ export default function ClientSwipe() {
           </Link>
           <div className="text-center flex-1">
             <h1 className="text-xl font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent">
-              Odoo Matchmaker
+              Client Dashboard
             </h1>
             <p className="text-xs text-muted-foreground">Swipes: {stats.totalSwipes} | Points: {stats.totalPoints}</p>
           </div>
@@ -203,126 +230,204 @@ export default function ClientSwipe() {
         </div>
       </header>
 
-      <main className="max-w-md mx-auto px-6 py-12 relative">
-        <div className="relative h-[600px]">
-          <AnimatePresence>
-            {partners.slice(currentIndex, currentIndex + 3).map((partner, idx) => {
-              const isTop = idx === 0;
-              const zIndex = 3 - idx;
-              const scale = 1 - idx * 0.05;
-              const yOffset = idx * 10;
+      <div className="flex-1 flex">
+        {/* Left Panel - Swipe Cards */}
+        <div className="w-1/2 lg:w-3/5 border-r bg-muted/20 flex flex-col">
+          <div className="p-4 border-b bg-card">
+            <h2 className="text-lg font-semibold">Find Partners</h2>
+            <p className="text-sm text-muted-foreground">
+              {currentIndex + 1} / {partners.length} partners
+            </p>
+          </div>
+          
+          <div className="flex-1 flex items-center justify-center p-6 relative">
+            <div className="relative w-full max-w-sm h-[520px]">
+              <AnimatePresence>
+                {partners.slice(currentIndex, currentIndex + 3).map((partner, idx) => {
+                  const isTop = idx === 0;
+                  const zIndex = 3 - idx;
+                  const scale = 1 - idx * 0.05;
+                  const yOffset = idx * 10;
 
-              return (
-                <motion.div
-                  key={partner.id}
-                  className="absolute inset-0"
-                  style={{
-                    zIndex,
-                    x: isTop ? x : 0,
-                    rotate: isTop ? rotate : 0,
-                    opacity: isTop ? opacity : 1,
-                  }}
-                  initial={{ scale, y: yOffset }}
-                  animate={{
-                    scale: isTop && direction ? 0.95 : scale,
-                    y: yOffset,
-                    x: isTop && direction ? (direction === "right" ? 300 : -300) : 0,
-                    rotate: isTop && direction ? (direction === "right" ? 20 : -20) : 0,
-                    opacity: isTop && direction ? 0 : 1,
-                  }}
-                  transition={{ duration: 0.3 }}
-                  drag={isTop ? "x" : false}
-                  dragConstraints={{ left: 0, right: 0 }}
-                  onDragEnd={isTop ? handleDragEnd : undefined}
-                >
-                  <Card className="h-full overflow-hidden rounded-3xl shadow-2xl border-2" data-testid={`card-partner-${partner.id}`}>
-                    <div className="h-full flex flex-col">
-                      <div className="h-48 bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center">
-                        <div className="w-32 h-32 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                          <span className="text-5xl font-bold text-partner-via">
-                            {partner.company.charAt(0)}
-                          </span>
-                        </div>
-                      </div>
+                  return (
+                    <motion.div
+                      key={partner.id}
+                      className="absolute inset-0"
+                      style={{
+                        zIndex,
+                        x: isTop ? x : 0,
+                        rotate: isTop ? rotate : 0,
+                        opacity: isTop ? opacity : 1,
+                      }}
+                      initial={{ scale, y: yOffset }}
+                      animate={{
+                        scale: isTop && direction ? 0.95 : scale,
+                        y: yOffset,
+                        x: isTop && direction ? (direction === "right" ? 300 : -300) : 0,
+                        rotate: isTop && direction ? (direction === "right" ? 20 : -20) : 0,
+                        opacity: isTop && direction ? 0 : 1,
+                      }}
+                      transition={{ duration: 0.3 }}
+                      drag={isTop ? "x" : false}
+                      dragConstraints={{ left: 0, right: 0 }}
+                      onDragEnd={isTop ? handleDragEnd : undefined}
+                    >
+                      <Card className="h-full overflow-hidden rounded-2xl shadow-xl border" data-testid={`card-partner-${partner.id}`}>
+                        <div className="h-full flex flex-col">
+                          <div className="h-32 bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center">
+                            <div className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                              <span className="text-3xl font-bold text-partner-via">
+                                {partner.company.charAt(0)}
+                              </span>
+                            </div>
+                          </div>
 
-                      <div className="flex-1 p-8 space-y-6 overflow-y-auto">
-                        <div className="space-y-2">
-                          <h2 className="text-3xl font-bold" data-testid={`text-company-${partner.id}`}>
-                            {partner.company}
-                          </h2>
-                          <div className="flex items-center gap-2">
-                            <div className="flex gap-1">
-                              {Array.from({ length: 5 }).map((_, i) => (
-                                <span key={i} className={i < (partner.rating || 3) ? "text-yellow-500" : "text-muted"}>
-                                  ★
+                          <div className="flex-1 p-4 space-y-3 overflow-y-auto">
+                            <div className="space-y-1">
+                              <h2 className="text-xl font-bold" data-testid={`text-company-${partner.id}`}>
+                                {partner.company}
+                              </h2>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex gap-0.5">
+                                  {Array.from({ length: 5 }).map((_, i) => (
+                                    <span key={i} className={`text-sm ${i < (partner.rating || 3) ? "text-yellow-500" : "text-muted"}`}>
+                                      ★
+                                    </span>
+                                  ))}
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  ({partner.reviewCount} reviews)
                                 </span>
-                              ))}
+                              </div>
                             </div>
-                            <span className="text-sm text-muted-foreground">
-                              ({partner.reviewCount} reviews)
-                            </span>
-                          </div>
-                        </div>
 
-                        <div className="space-y-3">
-                          <Badge variant="secondary" className="text-sm">
-                            {partner.industry}
-                          </Badge>
-                          
-                          <div className="space-y-2">
-                            <h3 className="font-semibold text-sm text-muted-foreground">Services Offered</h3>
-                            <div className="flex flex-wrap gap-2">
-                              {partner.services.map((service, i) => (
-                                <Badge key={i} className="rounded-full">
-                                  {service}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-
-                          {partner.description && (
                             <div className="space-y-2">
-                              <h3 className="font-semibold text-sm text-muted-foreground">About</h3>
-                              <p className="text-sm leading-relaxed">{partner.description}</p>
+                              <Badge variant="secondary" className="text-xs">
+                                {partner.industry}
+                              </Badge>
+                              
+                              <div className="space-y-1">
+                                <h3 className="font-semibold text-xs text-muted-foreground">Services</h3>
+                                <div className="flex flex-wrap gap-1">
+                                  {partner.services.slice(0, 4).map((service, i) => (
+                                    <Badge key={i} variant="outline" className="rounded-full text-xs">
+                                      {service}
+                                    </Badge>
+                                  ))}
+                                  {partner.services.length > 4 && (
+                                    <Badge variant="outline" className="rounded-full text-xs">
+                                      +{partner.services.length - 4}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+
+                              {partner.description && (
+                                <div className="space-y-1">
+                                  <h3 className="font-semibold text-xs text-muted-foreground">About</h3>
+                                  <p className="text-xs leading-relaxed line-clamp-3">{partner.description}</p>
+                                </div>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="p-4 border-t bg-card flex justify-center gap-4">
+            <Button
+              size="icon"
+              variant="outline"
+              className="w-14 h-14 rounded-full shadow-lg border-2"
+              onClick={() => handleAction("skip")}
+              data-testid="button-skip"
+              disabled={likeMutation.isPending}
+            >
+              <X className="w-6 h-6 text-danger-from" />
+            </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              className="w-14 h-14 rounded-full shadow-lg border-2"
+              onClick={() => handleAction("like")}
+              data-testid="button-like"
+              disabled={likeMutation.isPending}
+            >
+              <Heart className="w-6 h-6 text-success-from" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Right Panel - Likes */}
+        <div className="w-1/2 lg:w-2/5 flex flex-col">
+          <div className="p-4 border-b bg-card flex items-center gap-2">
+            <ThumbsUp className="w-5 h-5 text-success-from" />
+            <h2 className="text-lg font-semibold">Your Likes</h2>
+            <Badge variant="secondary" className="ml-auto">
+              {likedPartners.length}
+            </Badge>
+          </div>
+          
+          <ScrollArea className="flex-1">
+            <div className="p-4 space-y-3">
+              {likedPartners.length === 0 ? (
+                <div className="text-center py-12">
+                  <Heart className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
+                  <p className="text-muted-foreground">No likes yet</p>
+                  <p className="text-sm text-muted-foreground">
+                    Start swiping to find partners you like
+                  </p>
+                </div>
+              ) : (
+                likedPartners.map((match) => (
+                  <Card key={match.id} className="p-4" data-testid={`liked-partner-${match.partnerId}`}>
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center flex-shrink-0">
+                        <span className="text-lg font-bold text-white">
+                          {match.partner?.company?.charAt(0) || "?"}
+                        </span>
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold truncate">
+                          {match.partner?.company || "Unknown Partner"}
+                        </h3>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {match.partner?.industry}
+                        </p>
+                        <div className="flex items-center gap-1 mt-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <span key={i} className={`text-xs ${i < (match.partner?.rating || 3) ? "text-yellow-500" : "text-muted"}`}>
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                        {match.partnerAccepted && (
+                          <Badge variant="secondary" className="mt-2 text-xs bg-success-from/10 text-success-from border-success-from/20">
+                            Matched
+                          </Badge>
+                        )}
+                      </div>
+                      {match.partnerAccepted && (
+                        <Link href={`/messages/${match.id}`}>
+                          <Button size="icon" variant="ghost" data-testid={`button-message-${match.id}`}>
+                            <MessageCircle className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                      )}
                     </div>
                   </Card>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                ))
+              )}
+            </div>
+          </ScrollArea>
         </div>
-
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex gap-6 z-50">
-          <Button
-            size="icon"
-            variant="outline"
-            className="w-16 h-16 rounded-full bg-card shadow-xl border-2 hover:scale-110 transition-transform"
-            onClick={() => handleAction("skip")}
-            data-testid="button-skip"
-            disabled={likeMutation.isPending}
-          >
-            <X className="w-8 h-8 text-danger-from" />
-          </Button>
-          <Button
-            size="icon"
-            variant="outline"
-            className="w-16 h-16 rounded-full bg-card shadow-xl border-2 hover:scale-110 transition-transform"
-            onClick={() => handleAction("like")}
-            data-testid="button-like"
-            disabled={likeMutation.isPending}
-          >
-            <Heart className="w-8 h-8 text-success-from" />
-          </Button>
-        </div>
-
-        <div className="text-center mt-8 text-sm text-muted-foreground">
-          {currentIndex + 1} / {partners.length} partners
-        </div>
-      </main>
+      </div>
 
       {/* Achievements Sidebar */}
       {showAchievements && (
