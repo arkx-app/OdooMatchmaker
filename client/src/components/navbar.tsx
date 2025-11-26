@@ -56,7 +56,7 @@ export default function Navbar() {
 
           {/* Auth Buttons */}
           <div className="flex items-center gap-3">
-            <Link href="/auth/login">
+            <Link href="/auth">
               <Button variant="ghost" className="h-9 hidden sm:flex">
                 Login
               </Button>
