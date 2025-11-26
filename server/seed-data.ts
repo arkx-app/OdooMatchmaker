@@ -203,7 +203,7 @@ export async function seedPartners() {
   
   const existingPartners = await db.select().from(partners);
   
-  if (existingPartners.length >= 5) {
+  if (existingPartners.length > 0) {
     console.log(`Found ${existingPartners.length} existing partners, skipping seed.`);
     return;
   }

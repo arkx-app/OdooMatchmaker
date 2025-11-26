@@ -177,15 +177,15 @@ export default function ClientSwipe() {
             <p className="text-lg font-medium">Your Session Stats</p>
             <div className="flex justify-center gap-6 text-sm">
               <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{stats.totalSwipes}</p>
+                <p className="text-2xl font-bold text-primary" data-testid="text-swipes-count">{stats.totalSwipes}</p>
                 <p className="text-muted-foreground">Swipes</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-pink-500">{stats.totalLikes}</p>
+                <p className="text-2xl font-bold text-pink-500 dark:text-pink-400" data-testid="text-likes-count">{stats.totalLikes}</p>
                 <p className="text-muted-foreground">Likes</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-green-500">{stats.totalMatches}</p>
+                <p className="text-2xl font-bold text-green-500 dark:text-green-400" data-testid="text-matches-count">{stats.totalMatches}</p>
                 <p className="text-muted-foreground">Matches</p>
               </div>
             </div>
