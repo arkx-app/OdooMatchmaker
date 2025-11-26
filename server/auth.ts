@@ -71,15 +71,28 @@ export function setupAuth(app: Express) {
         lastName: lastName || undefined,
       });
 
-      // Set session
-      req.session.userId = user.id;
-
-      res.status(201).json({
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
+      // Regenerate session to prevent session fixation
+      req.session.regenerate((err) => {
+        if (err) {
+          console.error("Session regeneration error:", err);
+          return res.status(500).json({ message: "Registration failed" });
+        }
+        
+        req.session.userId = user.id;
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("Session save error:", saveErr);
+            return res.status(500).json({ message: "Registration failed" });
+          }
+          
+          res.status(201).json({
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+          });
+        });
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -112,10 +125,7 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
-      // Set session
-      req.session.userId = user.id;
-
-      // Get profile if exists
+      // Get profile if exists (do this before session regeneration)
       let profile = null;
       if (user.role === "partner") {
         profile = await storage.getPartnerByUserId(user.id);
@@ -123,13 +133,29 @@ export function setupAuth(app: Express) {
         profile = await storage.getClientByUserId(user.id);
       }
 
-      res.json({
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        profile,
+      // Regenerate session to prevent session fixation
+      req.session.regenerate((err) => {
+        if (err) {
+          console.error("Session regeneration error:", err);
+          return res.status(500).json({ message: "Login failed" });
+        }
+        
+        req.session.userId = user.id;
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("Session save error:", saveErr);
+            return res.status(500).json({ message: "Login failed" });
+          }
+          
+          res.json({
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            profile,
+          });
+        });
       });
     } catch (error) {
       console.error("Login error:", error);
