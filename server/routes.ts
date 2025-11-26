@@ -1,7 +1,7 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, getCurrentUserId } from "./auth";
 import { 
   insertPartnerSchema, insertClientSchema, insertMatchSchema,
   insertBriefSchema, insertMessageSchema, insertProjectSchema
@@ -53,13 +53,16 @@ function calculateMatchScore(brief: any, partner: any): { score: number; breakdo
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  await setupAuth(app);
+  setupAuth(app);
 
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
       const user = await storage.getUser(userId);
-      
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -71,16 +74,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         profile = await storage.getClientByUserId(userId);
       }
 
-      res.json({ ...user, profile });
+      res.json({ 
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        profile 
+      });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
 
-  app.post('/api/auth/complete-signup', isAuthenticated, async (req: any, res) => {
+  app.post('/api/auth/complete-signup', isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
       const { 
         role, 
         company, 

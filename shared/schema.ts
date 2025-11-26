@@ -14,14 +14,17 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// Users table for Replit Auth
+// Users table for authentication
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique(),
+  email: varchar("email").unique().notNull(),
+  passwordHash: varchar("password_hash"),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   role: text("role"), // 'partner' or 'client'
+  authProvider: text("auth_provider").default("local"), // 'local' or 'oauth'
+  emailVerified: boolean("email_verified").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -125,6 +128,29 @@ export const projects = pgTable("projects", {
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
+}).extend({
+  passwordHash: z.string().optional().nullable(),
+  firstName: z.string().optional().nullable(),
+  lastName: z.string().optional().nullable(),
+  profileImageUrl: z.string().optional().nullable(),
+  role: z.string().optional().nullable(),
+  authProvider: z.string().optional().default("local"),
+  emailVerified: z.boolean().optional().default(false),
+});
+
+// Registration schema for signup form
+export const registerSchema = z.object({
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+});
+
+// Login schema
+export const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email"),
+  password: z.string().min(1, "Password is required"),
 });
 
 export const insertPartnerSchema = createInsertSchema(partners).omit({

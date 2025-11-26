@@ -16,7 +16,7 @@ export default function Split() {
         setLocation("/client/signup");
       } else {
         sessionStorage.setItem("pendingRole", "client");
-        window.location.href = "/api/login";
+        setLocation("/auth");
       }
     } else {
       setLocation("/client-home");
@@ -30,7 +30,7 @@ export default function Split() {
         setLocation("/partner/signup");
       } else {
         sessionStorage.setItem("pendingRole", "partner");
-        window.location.href = "/api/login";
+        setLocation("/auth");
       }
     } else {
       setLocation("/partner-home");
@@ -77,7 +77,7 @@ export default function Split() {
             </div>
             
             <div className="flex items-center justify-center gap-2 text-white/80 text-lg">
-              <span>{isSignup ? "Sign up with Google, GitHub & more" : "Start swiping"}</span>
+              <span>{isSignup ? "Create your account" : "Start swiping"}</span>
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </div>
           </div>
@@ -109,7 +109,7 @@ export default function Split() {
             </div>
             
             <div className="flex items-center justify-center gap-2 text-white/80 text-lg">
-              <span>{isSignup ? "Sign up with Google, GitHub & more" : "Join our network"}</span>
+              <span>{isSignup ? "Create your account" : "Join our network"}</span>
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </div>
           </div>

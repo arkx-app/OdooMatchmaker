@@ -13,7 +13,7 @@ import ClientSwipe from "@/pages/client-swipe";
 import ClientSignup from "@/pages/client-signup";
 import PartnerSignup from "@/pages/partner-signup";
 import Pricing from "@/pages/pricing";
-import AuthLogin from "@/pages/auth-login";
+import Auth from "@/pages/auth";
 import ClientBrief from "@/pages/client-brief";
 import PartnerDashboard from "@/pages/partner-dashboard-gamified";
 import Messaging from "@/pages/messaging";
@@ -24,7 +24,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/get-started" component={Split} />
-      <Route path="/auth/login" component={AuthLogin} />
+      <Route path="/auth" component={Auth} />
       <Route path="/client-home" component={ClientHome} />
       <Route path="/partner-home" component={PartnerHome} />
       <Route path="/client/swipe" component={ClientSwipe} />
