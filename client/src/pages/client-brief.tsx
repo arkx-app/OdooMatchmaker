@@ -1,20 +1,61 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { queryClient } from "@/lib/queryClient";
+import { LogOut, ArrowLeft } from "lucide-react";
+import { Link } from "wouter";
 
 const modules = ["Accounting", "CRM", "Sales", "Inventory", "HR", "Manufacturing", "Website"];
-const industries = ["Technology", "Retail", "Finance", "Healthcare", "Manufacturing", "Education", "Real Estate"];
+
+interface BriefsResponse {
+  briefs: any[];
+  hasProfile: boolean;
+  clientId?: string;
+}
 
 export default function ClientBrief() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const profile = JSON.parse(localStorage.getItem("profile") || "{}");
-  const [isLoading, setIsLoading] = useState(false);
+  const { isAuthenticated, isLoading: authLoading, logout } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { data: briefsData, isLoading: briefsLoading } = useQuery<BriefsResponse>({
+    queryKey: ["/api/my/briefs"],
+    queryFn: async () => {
+      const res = await fetch("/api/my/briefs", {
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error("Failed to fetch briefs");
+      }
+      return res.json();
+    },
+    enabled: isAuthenticated,
+  });
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/client/signup");
+    }
+  }, [authLoading, isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (briefsData && briefsData.briefs && briefsData.briefs.length > 0) {
+      navigate("/client/swipe");
+    }
+  }, [briefsData, navigate]);
+
+  const handleLogout = async () => {
+    await logout();
+    localStorage.removeItem("profile");
+    navigate("/");
+  };
 
   const [formData, setFormData] = useState({
     title: "",
@@ -27,26 +68,34 @@ export default function ClientBrief() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    
+    if (!briefsData?.clientId) {
+      toast({ title: "Please complete your profile first", variant: "destructive" });
+      return;
+    }
+    
+    setIsSubmitting(true);
 
     try {
       const response = await fetch("/api/briefs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
-          clientId: profile.id,
+          clientId: briefsData.clientId,
           ...formData,
           timelineWeeks: parseInt(formData.timelineWeeks) || undefined,
         }),
       }).then((r) => r.json());
 
       queryClient.invalidateQueries({ queryKey: ["/api/briefs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/my/briefs"] });
       toast({ title: "Brief created! Matches are being generated..." });
       navigate("/client/swipe");
     } catch (error) {
       toast({ title: "Failed to create brief", variant: "destructive" });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -59,13 +108,62 @@ export default function ClientBrief() {
     }));
   };
 
+  if (authLoading || briefsLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!briefsData?.hasProfile) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Card className="max-w-md w-full p-8 text-center space-y-6">
+          <h2 className="text-2xl font-bold">Complete Your Profile</h2>
+          <p className="text-muted-foreground">
+            Please complete your client profile before creating a project brief.
+          </p>
+          <Link href="/client/signup">
+            <Button className="w-full" data-testid="button-complete-profile">
+              Complete Profile
+            </Button>
+          </Link>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-2xl mx-auto py-8">
-        <h1 className="text-3xl font-bold mb-2">Describe Your Project</h1>
-        <p className="text-muted-foreground mb-8">
-          Help us find the perfect partner for your Odoo implementation
-        </p>
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card sticky top-0 z-50 backdrop-blur-lg">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-2">
+          <Link href="/">
+            <Button variant="ghost" size="icon" data-testid="button-back">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent">
+            Create Project Brief
+          </h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            data-testid="button-logout"
+          >
+            <LogOut className="w-5 h-5" />
+          </Button>
+        </div>
+      </header>
+      
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold mb-2">Describe Your Project</h2>
+          <p className="text-muted-foreground">
+            Help us find the perfect partner for your Odoo implementation
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card className="p-6">
@@ -146,10 +244,10 @@ export default function ClientBrief() {
             type="submit"
             className="w-full bg-gradient-to-r from-client-from to-client-to text-white"
             size="lg"
-            disabled={isLoading}
+            disabled={isSubmitting}
             data-testid="button-submit"
           >
-            {isLoading ? "Creating brief..." : "Find Partners"}
+            {isSubmitting ? "Creating brief..." : "Find Partners"}
           </Button>
         </form>
       </div>
