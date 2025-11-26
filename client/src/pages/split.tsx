@@ -12,12 +12,7 @@ export default function Split() {
   const handleClientClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (isSignup) {
-      if (isAuthenticated) {
-        setLocation("/client/signup");
-      } else {
-        sessionStorage.setItem("pendingRole", "client");
-        setLocation("/auth");
-      }
+      setLocation("/client/signup");
     } else {
       setLocation("/client-home");
     }
@@ -26,12 +21,7 @@ export default function Split() {
   const handlePartnerClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (isSignup) {
-      if (isAuthenticated) {
-        setLocation("/partner/signup");
-      } else {
-        sessionStorage.setItem("pendingRole", "partner");
-        setLocation("/auth");
-      }
+      setLocation("/partner/signup");
     } else {
       setLocation("/partner-home");
     }
