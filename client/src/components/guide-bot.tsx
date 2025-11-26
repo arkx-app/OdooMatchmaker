@@ -17,17 +17,50 @@ interface GuideBotProps {
   isPartner?: boolean;
 }
 
+const GUIDE_SEEN_KEY = "odoo_matchmaker_guide_seen";
+
 export default function GuideBot({ steps, onComplete, isPartner }: GuideBotProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [hasSeenGuide, setHasSeenGuide] = useState(true);
+
+  // Check if user has already seen the guide
+  useEffect(() => {
+    const storageKey = `${GUIDE_SEEN_KEY}_${isPartner ? "partner" : "client"}`;
+    const seen = localStorage.getItem(storageKey);
+    if (!seen) {
+      setHasSeenGuide(false);
+      setIsOpen(true);
+    } else {
+      setHasSeenGuide(true);
+      setCompleted(true);
+    }
+  }, [isPartner]);
+
+  // Mark guide as seen when completed or dismissed
+  const markGuideSeen = () => {
+    const storageKey = `${GUIDE_SEEN_KEY}_${isPartner ? "partner" : "client"}`;
+    localStorage.setItem(storageKey, "true");
+    setHasSeenGuide(true);
+  };
 
   useEffect(() => {
     if (currentStep >= steps.length) {
       setCompleted(true);
+      markGuideSeen();
       onComplete?.();
     }
   }, [currentStep, steps.length, onComplete]);
+
+  // Handle closing the guide - mark as seen so it doesn't show again
+  const handleClose = () => {
+    setIsOpen(false);
+    markGuideSeen();
+  };
+
+  // Don't render anything if user has already seen the guide
+  if (hasSeenGuide) return null;
 
   if (completed && !isOpen) return null;
 
@@ -61,7 +94,7 @@ export default function GuideBot({ steps, onComplete, isPartner }: GuideBotProps
               <p className="text-xs opacity-90">Step {currentStep + 1} of {steps.length}</p>
             </div>
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={handleClose}
               className="hover:bg-white/20 p-1 rounded transition-colors"
               data-testid="button-close-guide"
             >
