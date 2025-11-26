@@ -305,6 +305,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/my/briefs", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const client = await storage.getClientByUserId(userId);
+      if (!client) {
+        return res.json({ briefs: [], hasProfile: false });
+      }
+
+      const briefs = await storage.getBriefsByClient(client.id);
+      res.json({ briefs, hasProfile: true, clientId: client.id });
+    } catch (error) {
+      console.error("Error fetching user briefs:", error);
+      res.status(500).json({ message: "Failed to fetch briefs" });
+    }
+  });
+
   app.get("/api/matches/partner/:partnerId", async (req, res) => {
     try {
       const matches = await storage.getMatchesByPartner(req.params.partnerId);
