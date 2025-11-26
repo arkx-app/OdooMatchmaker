@@ -805,6 +805,14 @@ export default function ClientDashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => navigate("/client/swipe")}
+                  className="bg-gradient-to-r from-client-from to-client-to text-white"
+                  data-testid="button-back-to-swiping"
+                >
+                  <Heart className="w-4 h-4 mr-2" />
+                  Keep Swiping
+                </Button>
                 {(activeSection === "liked" || activeSection === "saved" || activeSection === "matches") && (
                   <>
                     <div className="relative w-64 hidden md:block">
@@ -922,11 +930,7 @@ export default function ClientDashboard() {
                         <div className="text-center py-8">
                           <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
                           <p className="text-muted-foreground mb-2">No matches yet</p>
-                          <p className="text-sm text-muted-foreground mb-4">Start swiping to find your perfect partner</p>
-                          <Button onClick={() => navigate("/client/swipe")} data-testid="button-start-swiping">
-                            <Heart className="w-4 h-4 mr-2" />
-                            Start Swiping
-                          </Button>
+                          <p className="text-sm text-muted-foreground">Use the "Keep Swiping" button above to find partners</p>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -956,16 +960,7 @@ export default function ClientDashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid sm:grid-cols-4 gap-4">
-                      <Button 
-                        variant="outline" 
-                        className="h-auto py-6 flex-col gap-2"
-                        onClick={() => navigate("/client/swipe")}
-                        data-testid="button-quick-swipe"
-                      >
-                        <Heart className="w-6 h-6" />
-                        <span>Find Partners</span>
-                      </Button>
+                    <div className="grid sm:grid-cols-3 gap-4">
                       <Button 
                         variant="outline" 
                         className="h-auto py-6 flex-col gap-2"
@@ -1182,12 +1177,9 @@ export default function ClientDashboard() {
                   <Card className="p-12 text-center">
                     <MessageCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">No conversations yet</h3>
-                    <p className="text-muted-foreground mb-6">
-                      Match with partners to start messaging them
+                    <p className="text-muted-foreground">
+                      Match with partners to start messaging them. Use the "Keep Swiping" button above to find partners.
                     </p>
-                    <Button onClick={() => navigate("/client/swipe")} data-testid="button-find-to-message">
-                      Find Partners
-                    </Button>
                   </Card>
                 ) : (
                   <div className="space-y-3">
