@@ -3,11 +3,13 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { 
   X, Heart, ArrowLeft, Sparkles, Award, LogOut, ThumbsUp, MessageCircle,
   FolderPlus, Clock, DollarSign, CheckCircle2, AlertCircle, Loader2, Plus,
-  Briefcase, ChevronDown, ChevronUp
+  Briefcase, ChevronDown, ChevronUp, ExternalLink, LayoutDashboard, 
+  Users, BarChart3, Settings
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link, useLocation } from "wouter";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
@@ -499,112 +501,139 @@ export default function ClientSwipe() {
           </div>
         </div>
 
-        {/* Right Panel - Likes & Projects */}
+        {/* Right Panel - Tabbed Likes & Projects */}
         <div className="w-1/2 lg:w-2/5 flex flex-col">
-          <ScrollArea className="flex-1">
-            {/* Likes Section */}
-            <div className="border-b">
-              <div className="p-4 border-b bg-card flex items-center gap-2">
-                <ThumbsUp className="w-5 h-5 text-success-from" />
-                <h2 className="text-lg font-semibold">Your Likes</h2>
-                <Badge variant="secondary" className="ml-auto">
-                  {likedPartners.length}
-                </Badge>
-              </div>
-              
-              <div className="p-4 space-y-3">
+          <Tabs defaultValue="likes" className="flex flex-col h-full">
+            <div className="p-3 border-b bg-card">
+              <TabsList className="w-full grid grid-cols-2">
+                <TabsTrigger value="likes" className="gap-2" data-testid="tab-likes">
+                  <ThumbsUp className="w-4 h-4" />
+                  Likes
+                  {likedPartners.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 text-xs">
+                      {likedPartners.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="projects" className="gap-2" data-testid="tab-projects">
+                  <Briefcase className="w-4 h-4" />
+                  Projects
+                  {clientBriefs.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 text-xs">
+                      {clientBriefs.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <ScrollArea className="flex-1">
+              {/* Likes Tab Content */}
+              <TabsContent value="likes" className="m-0 p-4 space-y-3">
                 {likedPartners.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Heart className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
-                    <p className="text-muted-foreground text-sm">No likes yet</p>
-                    <p className="text-xs text-muted-foreground">
-                      Swipe right to like partners
+                  <div className="text-center py-12">
+                    <Heart className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
+                    <p className="text-muted-foreground font-medium">No likes yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Swipe right on partners you like
                     </p>
                   </div>
                 ) : (
-                  likedPartners.slice(0, 3).map((match) => (
-                    <Card key={match.id} className="p-3" data-testid={`liked-partner-${match.partnerId}`}>
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm font-bold text-white">
-                            {match.partner?.company?.charAt(0) || "?"}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm truncate">
-                            {match.partner?.company || "Unknown Partner"}
-                          </h3>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {match.partner?.industry}
-                          </p>
+                  <>
+                    {likedPartners.map((match) => (
+                      <Card key={match.id} className="p-3 overflow-visible hover-elevate" data-testid={`liked-partner-${match.partnerId}`}>
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center flex-shrink-0">
+                            <span className="text-sm font-bold text-white">
+                              {match.partner?.company?.charAt(0) || "?"}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-sm truncate">
+                              {match.partner?.company || "Unknown Partner"}
+                            </h3>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {match.partner?.industry}
+                            </p>
+                            {match.partnerAccepted && (
+                              <Badge variant="secondary" className="mt-1 text-xs bg-success-from/10 text-success-from border-success-from/20">
+                                Matched
+                              </Badge>
+                            )}
+                          </div>
                           {match.partnerAccepted && (
-                            <Badge variant="secondary" className="mt-1 text-xs bg-success-from/10 text-success-from border-success-from/20">
-                              Matched
-                            </Badge>
+                            <Link href={`/messages/${match.id}`}>
+                              <Button size="icon" variant="ghost" data-testid={`button-message-${match.id}`}>
+                                <MessageCircle className="w-4 h-4" />
+                              </Button>
+                            </Link>
                           )}
                         </div>
-                        {match.partnerAccepted && (
-                          <Link href={`/messages/${match.id}`}>
-                            <Button size="icon" variant="ghost" data-testid={`button-message-${match.id}`}>
-                              <MessageCircle className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                        )}
+                      </Card>
+                    ))}
+                  </>
+                )}
+              </TabsContent>
+
+              {/* Projects Tab Content */}
+              <TabsContent value="projects" className="m-0 p-4 space-y-4">
+                {/* Dashboard Preview Card */}
+                <Card className="overflow-hidden bg-gradient-to-br from-client-from/5 via-client-via/5 to-client-to/5 border-client-via/20">
+                  <CardContent className="p-4 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-client-from to-client-to flex items-center justify-center">
+                        <LayoutDashboard className="w-5 h-5 text-white" />
                       </div>
-                    </Card>
-                  ))
-                )}
-                {likedPartners.length > 3 && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={() => navigate("/client/dashboard")}
-                    data-testid="button-view-all-likes"
-                  >
-                    View all {likedPartners.length} likes
-                  </Button>
-                )}
-              </div>
-            </div>
+                      <div>
+                        <h3 className="font-semibold">Project Dashboard</h3>
+                        <p className="text-xs text-muted-foreground">Manage all your projects</p>
+                      </div>
+                    </div>
 
-            {/* Projects Section */}
-            <div>
-              <div className="p-4 border-b bg-card flex items-center gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => setProjectsExpanded(!projectsExpanded)}
-                  data-testid="button-toggle-projects"
-                >
-                  {projectsExpanded ? (
-                    <ChevronUp className="w-4 h-4" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4" />
-                  )}
-                </Button>
-                <Briefcase className="w-5 h-5 text-client-via" />
-                <h2 className="text-lg font-semibold">Your Projects</h2>
-                <Badge variant="secondary" className="ml-auto">
-                  {clientBriefs.length}
-                </Badge>
-              </div>
+                    {/* Dashboard Features Preview */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center gap-2 p-2 rounded-md bg-background/60">
+                        <Users className="w-4 h-4 text-client-via" />
+                        <span className="text-xs">Partner Matches</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 rounded-md bg-background/60">
+                        <BarChart3 className="w-4 h-4 text-client-via" />
+                        <span className="text-xs">Project Analytics</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 rounded-md bg-background/60">
+                        <MessageCircle className="w-4 h-4 text-client-via" />
+                        <span className="text-xs">Conversations</span>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 rounded-md bg-background/60">
+                        <Settings className="w-4 h-4 text-client-via" />
+                        <span className="text-xs">Project Settings</span>
+                      </div>
+                    </div>
 
-              {projectsExpanded && (
-                <div className="p-4 space-y-3">
-                  {/* Post New Project Button */}
-                  <Dialog open={showProjectDialog} onOpenChange={setShowProjectDialog}>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="w-full border-dashed"
-                        data-testid="button-new-project"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Post New Project
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
+                    {/* Open Dashboard Button */}
+                    <Button 
+                      className="w-full bg-gradient-to-r from-client-from to-client-to text-white"
+                      onClick={() => navigate("/client/dashboard")}
+                      data-testid="button-open-dashboard"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Open Full Dashboard
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Quick Actions */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="font-semibold text-sm">Your Projects</h4>
+                    <Dialog open={showProjectDialog} onOpenChange={setShowProjectDialog}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" variant="outline" data-testid="button-new-project">
+                          <Plus className="w-4 h-4 mr-1" />
+                          New
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Create New Project</DialogTitle>
                         <DialogDescription>
@@ -703,8 +732,9 @@ export default function ClientSwipe() {
                           )}
                         </Button>
                       </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
 
                   {/* Project List */}
                   {briefsLoading ? (
@@ -768,21 +798,21 @@ export default function ClientSwipe() {
                     ))
                   )}
 
-                  {clientBriefs.length > 0 && (
+                  {clientBriefs.length > 3 && (
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="w-full"
+                      className="w-full text-muted-foreground"
                       onClick={() => navigate("/client/dashboard")}
                       data-testid="button-view-all-projects"
                     >
-                      Manage all projects
+                      View all {clientBriefs.length} projects
                     </Button>
                   )}
                 </div>
-              )}
-            </div>
-          </ScrollArea>
+              </TabsContent>
+            </ScrollArea>
+          </Tabs>
         </div>
       </div>
 

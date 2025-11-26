@@ -50,17 +50,18 @@ export function AchievementBadge({ achievement, showPopup }: AchievementBadgePro
   );
 }
 
-export function AchievementsList({ achievements }: { achievements: Achievement[] }) {
-  const unlockedCount = achievements.filter(a => a.unlocked).length;
-  const totalPoints = achievements.reduce((sum, a) => (a.unlocked ? sum + a.points : sum), 0);
+export function AchievementsList({ achievements = [] }: { achievements?: Achievement[] }) {
+  const safeAchievements = achievements || [];
+  const unlockedCount = safeAchievements.filter(a => a.unlocked).length;
+  const totalPoints = safeAchievements.reduce((sum, a) => (a.unlocked ? sum + a.points : sum), 0);
 
   return (
     <Card className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div>
           <h3 className="font-bold text-lg">Achievements</h3>
           <p className="text-sm text-muted-foreground">
-            {unlockedCount} of {achievements.length} unlocked
+            {unlockedCount} of {safeAchievements.length} unlocked
           </p>
         </div>
         <div className="text-right">
@@ -70,7 +71,7 @@ export function AchievementsList({ achievements }: { achievements: Achievement[]
       </div>
 
       <div className="grid grid-cols-4 gap-3">
-        {achievements.map((achievement) => (
+        {safeAchievements.map((achievement) => (
           <div key={achievement.id} className="text-center space-y-2">
             <AchievementBadge achievement={achievement} />
             <p className="text-xs font-medium leading-tight">{achievement.name}</p>
