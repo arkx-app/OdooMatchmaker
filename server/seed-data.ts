@@ -1,7 +1,45 @@
 import { db } from "./db";
-import { partners, users } from "@shared/schema";
+import { partners, users, briefs, clients } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
+
+// Sample project briefs for testing
+export const SAMPLE_BRIEFS = [
+  {
+    title: "ERP Implementation for E-commerce Platform",
+    description: "Looking for an experienced Odoo partner to help implement a full ERP solution for our growing e-commerce business. We need inventory management, order processing, and accounting integration.",
+    modules: ["eCommerce", "Inventory", "Accounting", "CRM"],
+    budget: "$25k-50k",
+    timelineWeeks: 12,
+    painPoints: ["Manual inventory tracking", "Disconnected systems", "Slow order processing"],
+    integrations: ["Shopify", "QuickBooks", "Stripe"],
+    priority: "high",
+    status: "active",
+  },
+  {
+    title: "Manufacturing MRP System Upgrade",
+    description: "Need to upgrade our existing manufacturing processes with Odoo MRP. Currently using spreadsheets for production planning and need a more robust solution.",
+    modules: ["Manufacturing", "MRP", "Quality Control", "Maintenance"],
+    budget: "$50k-100k",
+    timelineWeeks: 16,
+    painPoints: ["Production delays", "Quality issues", "Lack of visibility"],
+    integrations: ["CAD Software", "IoT Sensors"],
+    priority: "medium",
+    status: "matching",
+  },
+  {
+    title: "HR & Payroll System Implementation",
+    description: "Small but growing company seeking Odoo partner for HR module implementation. Need employee management, timesheet tracking, and payroll integration for 50+ employees.",
+    modules: ["HR", "Payroll", "Timesheets", "Recruitment"],
+    budget: "$10k-25k",
+    timelineWeeks: 8,
+    painPoints: ["Manual payroll processing", "No time tracking", "Paper-based HR"],
+    integrations: ["ADP", "Slack"],
+    priority: "high",
+    status: "active",
+  },
+];
 
 export const SEED_PARTNERS = [
   {
@@ -253,4 +291,49 @@ export async function seedPartners() {
   }
 
   console.log("Partner seeding complete!");
+}
+
+// Seed sample briefs for a specific client
+export async function seedBriefsForClient(clientId: string) {
+  console.log(`Checking for existing briefs for client ${clientId}...`);
+  
+  const existingBriefs = await db.select().from(briefs).where(
+    eq(briefs.clientId, clientId)
+  );
+  
+  if (existingBriefs.length > 0) {
+    console.log(`Client already has ${existingBriefs.length} briefs, skipping seed.`);
+    return existingBriefs;
+  }
+
+  console.log("Seeding sample briefs for client...");
+  const seededBriefs = [];
+
+  for (const briefData of SAMPLE_BRIEFS) {
+    try {
+      const briefId = randomUUID();
+      
+      const [newBrief] = await db.insert(briefs).values({
+        id: briefId,
+        clientId,
+        title: briefData.title,
+        description: briefData.description,
+        modules: briefData.modules,
+        budget: briefData.budget,
+        timelineWeeks: briefData.timelineWeeks,
+        painPoints: briefData.painPoints,
+        integrations: briefData.integrations,
+        priority: briefData.priority,
+        status: briefData.status,
+      }).returning();
+
+      seededBriefs.push(newBrief);
+      console.log(`Seeded brief: ${briefData.title}`);
+    } catch (error) {
+      console.log(`Failed to seed brief: ${briefData.title}`, error);
+    }
+  }
+
+  console.log(`Brief seeding complete! Created ${seededBriefs.length} briefs.`);
+  return seededBriefs;
 }

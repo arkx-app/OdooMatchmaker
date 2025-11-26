@@ -1,19 +1,43 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { X, Heart, ArrowLeft, Sparkles, Award, LogOut, ThumbsUp, MessageCircle } from "lucide-react";
+import { 
+  X, Heart, ArrowLeft, Sparkles, Award, LogOut, ThumbsUp, MessageCircle,
+  FolderPlus, Clock, DollarSign, CheckCircle2, AlertCircle, Loader2, Plus,
+  Briefcase, ChevronDown, ChevronUp
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link, useLocation } from "wouter";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
-import type { Partner, Match } from "@shared/schema";
+import type { Partner, Match, Brief } from "@shared/schema";
 import MatchModal from "@/components/match-modal";
 import GuideBot from "@/components/guide-bot";
 import { AchievementsList } from "@/components/achievement-badge";
 import { useGamification } from "@/hooks/use-gamification";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 interface EnrichedMatch extends Match {
   partner?: Partner;
@@ -46,6 +70,36 @@ const CLIENT_GUIDE_STEPS = [
   },
 ];
 
+function ProjectStatusBadge({ status }: { status: string }) {
+  const statusConfig: Record<string, { label: string; icon: typeof CheckCircle2; className: string }> = {
+    active: { 
+      label: "Active", 
+      icon: CheckCircle2, 
+      className: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20" 
+    },
+    matching: { 
+      label: "Matching", 
+      icon: Loader2, 
+      className: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" 
+    },
+    archived: { 
+      label: "Archived", 
+      icon: AlertCircle, 
+      className: "bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20" 
+    },
+  };
+
+  const config = statusConfig[status] || statusConfig.active;
+  const Icon = config.icon;
+
+  return (
+    <Badge variant="outline" className={`text-xs ${config.className}`}>
+      <Icon className={`w-3 h-3 mr-1 ${status === 'matching' ? 'animate-spin' : ''}`} />
+      {config.label}
+    </Badge>
+  );
+}
+
 export default function ClientSwipe() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showMatch, setShowMatch] = useState(false);
@@ -53,8 +107,18 @@ export default function ClientSwipe() {
   const [direction, setDirection] = useState<"left" | "right" | null>(null);
   const { stats, recordSwipe, recordMatch, newAchievements } = useGamification("clientGamification");
   const [showAchievements, setShowAchievements] = useState(false);
+  const [showProjectDialog, setShowProjectDialog] = useState(false);
+  const [projectsExpanded, setProjectsExpanded] = useState(true);
+  const [newProject, setNewProject] = useState({
+    title: "",
+    description: "",
+    budget: "",
+    timelineWeeks: "",
+    priority: "medium",
+  });
   const [, navigate] = useLocation();
   const { logout, user, isLoading: authLoading, isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   const clientId = user?.profile?.id || "";
 
@@ -84,6 +148,59 @@ export default function ClientSwipe() {
       return res.json();
     },
     enabled: !!clientId,
+  });
+
+  const { data: briefsData, isLoading: briefsLoading } = useQuery<{ briefs: Brief[]; clientId?: string }>({
+    queryKey: ["/api/my/briefs"],
+    queryFn: async () => {
+      const res = await fetch("/api/my/briefs", {
+        credentials: "include",
+      });
+      if (!res.ok) return { briefs: [] };
+      return res.json();
+    },
+    enabled: isAuthenticated,
+  });
+
+  const clientBriefs = briefsData?.briefs || [];
+
+  const createBriefMutation = useMutation({
+    mutationFn: async (data: typeof newProject) => {
+      const response = await apiRequest("POST", "/api/briefs", {
+        clientId,
+        title: data.title,
+        description: data.description,
+        budget: data.budget,
+        timelineWeeks: parseInt(data.timelineWeeks) || 4,
+        priority: data.priority,
+        modules: [],
+        painPoints: [],
+        integrations: [],
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/my/briefs"] });
+      setShowProjectDialog(false);
+      setNewProject({
+        title: "",
+        description: "",
+        budget: "",
+        timelineWeeks: "",
+        priority: "medium",
+      });
+      toast({
+        title: "Project Created",
+        description: "Your project has been posted successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create project. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const likedPartners = clientMatches.filter((m) => m.clientLiked && m.partner);
@@ -382,65 +499,287 @@ export default function ClientSwipe() {
           </div>
         </div>
 
-        {/* Right Panel - Likes */}
+        {/* Right Panel - Likes & Projects */}
         <div className="w-1/2 lg:w-2/5 flex flex-col">
-          <div className="p-4 border-b bg-card flex items-center gap-2">
-            <ThumbsUp className="w-5 h-5 text-success-from" />
-            <h2 className="text-lg font-semibold">Your Likes</h2>
-            <Badge variant="secondary" className="ml-auto">
-              {likedPartners.length}
-            </Badge>
-          </div>
-          
           <ScrollArea className="flex-1">
-            <div className="p-4 space-y-3">
-              {likedPartners.length === 0 ? (
-                <div className="text-center py-12">
-                  <Heart className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
-                  <p className="text-muted-foreground">No likes yet</p>
-                  <p className="text-sm text-muted-foreground">
-                    Start swiping to find partners you like
-                  </p>
-                </div>
-              ) : (
-                likedPartners.map((match) => (
-                  <Card key={match.id} className="p-4" data-testid={`liked-partner-${match.partnerId}`}>
-                    <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center flex-shrink-0">
-                        <span className="text-lg font-bold text-white">
-                          {match.partner?.company?.charAt(0) || "?"}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold truncate">
-                          {match.partner?.company || "Unknown Partner"}
-                        </h3>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {match.partner?.industry}
-                        </p>
-                        <div className="flex items-center gap-1 mt-1">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <span key={i} className={`text-xs ${i < (match.partner?.rating || 3) ? "text-yellow-500" : "text-muted"}`}>
-                              ★
-                            </span>
-                          ))}
+            {/* Likes Section */}
+            <div className="border-b">
+              <div className="p-4 border-b bg-card flex items-center gap-2">
+                <ThumbsUp className="w-5 h-5 text-success-from" />
+                <h2 className="text-lg font-semibold">Your Likes</h2>
+                <Badge variant="secondary" className="ml-auto">
+                  {likedPartners.length}
+                </Badge>
+              </div>
+              
+              <div className="p-4 space-y-3">
+                {likedPartners.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Heart className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
+                    <p className="text-muted-foreground text-sm">No likes yet</p>
+                    <p className="text-xs text-muted-foreground">
+                      Swipe right to like partners
+                    </p>
+                  </div>
+                ) : (
+                  likedPartners.slice(0, 3).map((match) => (
+                    <Card key={match.id} className="p-3" data-testid={`liked-partner-${match.partnerId}`}>
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-bold text-white">
+                            {match.partner?.company?.charAt(0) || "?"}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm truncate">
+                            {match.partner?.company || "Unknown Partner"}
+                          </h3>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {match.partner?.industry}
+                          </p>
+                          {match.partnerAccepted && (
+                            <Badge variant="secondary" className="mt-1 text-xs bg-success-from/10 text-success-from border-success-from/20">
+                              Matched
+                            </Badge>
+                          )}
                         </div>
                         {match.partnerAccepted && (
-                          <Badge variant="secondary" className="mt-2 text-xs bg-success-from/10 text-success-from border-success-from/20">
-                            Matched
-                          </Badge>
+                          <Link href={`/messages/${match.id}`}>
+                            <Button size="icon" variant="ghost" data-testid={`button-message-${match.id}`}>
+                              <MessageCircle className="w-4 h-4" />
+                            </Button>
+                          </Link>
                         )}
                       </div>
-                      {match.partnerAccepted && (
-                        <Link href={`/messages/${match.id}`}>
-                          <Button size="icon" variant="ghost" data-testid={`button-message-${match.id}`}>
-                            <MessageCircle className="w-4 h-4" />
-                          </Button>
-                        </Link>
-                      )}
+                    </Card>
+                  ))
+                )}
+                {likedPartners.length > 3 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => navigate("/client/dashboard")}
+                    data-testid="button-view-all-likes"
+                  >
+                    View all {likedPartners.length} likes
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Projects Section */}
+            <div>
+              <div className="p-4 border-b bg-card flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => setProjectsExpanded(!projectsExpanded)}
+                  data-testid="button-toggle-projects"
+                >
+                  {projectsExpanded ? (
+                    <ChevronUp className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
+                </Button>
+                <Briefcase className="w-5 h-5 text-client-via" />
+                <h2 className="text-lg font-semibold">Your Projects</h2>
+                <Badge variant="secondary" className="ml-auto">
+                  {clientBriefs.length}
+                </Badge>
+              </div>
+
+              {projectsExpanded && (
+                <div className="p-4 space-y-3">
+                  {/* Post New Project Button */}
+                  <Dialog open={showProjectDialog} onOpenChange={setShowProjectDialog}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="w-full border-dashed"
+                        data-testid="button-new-project"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Post New Project
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create New Project</DialogTitle>
+                        <DialogDescription>
+                          Describe your project to find the perfect Odoo partner
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="project-title">Project Title</Label>
+                          <Input
+                            id="project-title"
+                            placeholder="e.g., ERP Implementation for Manufacturing"
+                            value={newProject.title}
+                            onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+                            data-testid="input-project-title"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="project-description">Description</Label>
+                          <Textarea
+                            id="project-description"
+                            placeholder="Describe your project requirements, goals, and any specific needs..."
+                            value={newProject.description}
+                            onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                            data-testid="input-project-description"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="project-budget">Budget</Label>
+                            <Select 
+                              value={newProject.budget} 
+                              onValueChange={(v) => setNewProject({ ...newProject, budget: v })}
+                            >
+                              <SelectTrigger data-testid="select-project-budget">
+                                <SelectValue placeholder="Select budget" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="$5k-10k">$5k - $10k</SelectItem>
+                                <SelectItem value="$10k-25k">$10k - $25k</SelectItem>
+                                <SelectItem value="$25k-50k">$25k - $50k</SelectItem>
+                                <SelectItem value="$50k-100k">$50k - $100k</SelectItem>
+                                <SelectItem value="$100k+">$100k+</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="project-timeline">Timeline (weeks)</Label>
+                            <Input
+                              id="project-timeline"
+                              type="number"
+                              placeholder="e.g., 12"
+                              value={newProject.timelineWeeks}
+                              onChange={(e) => setNewProject({ ...newProject, timelineWeeks: e.target.value })}
+                              data-testid="input-project-timeline"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Priority</Label>
+                          <Select 
+                            value={newProject.priority} 
+                            onValueChange={(v) => setNewProject({ ...newProject, priority: v })}
+                          >
+                            <SelectTrigger data-testid="select-project-priority">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Low - Flexible timeline</SelectItem>
+                              <SelectItem value="medium">Medium - Standard priority</SelectItem>
+                              <SelectItem value="high">High - Urgent need</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setShowProjectDialog(false)}
+                          data-testid="button-cancel-project"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={() => createBriefMutation.mutate(newProject)}
+                          disabled={!newProject.title || !newProject.description || !newProject.budget || createBriefMutation.isPending}
+                          data-testid="button-submit-project"
+                        >
+                          {createBriefMutation.isPending ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Creating...
+                            </>
+                          ) : (
+                            "Create Project"
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Project List */}
+                  {briefsLoading ? (
+                    <div className="text-center py-8">
+                      <Loader2 className="w-8 h-8 mx-auto text-muted-foreground animate-spin mb-2" />
+                      <p className="text-sm text-muted-foreground">Loading projects...</p>
                     </div>
-                  </Card>
-                ))
+                  ) : clientBriefs.length === 0 ? (
+                    <div className="text-center py-8">
+                      <FolderPlus className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
+                      <p className="text-muted-foreground text-sm">No projects yet</p>
+                      <p className="text-xs text-muted-foreground">
+                        Create a project to start matching
+                      </p>
+                    </div>
+                  ) : (
+                    clientBriefs.map((brief) => (
+                      <Card key={brief.id} className="overflow-visible hover-elevate" data-testid={`card-project-${brief.id}`}>
+                        <CardContent className="p-4">
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className="font-semibold text-sm line-clamp-1">
+                                {brief.title}
+                              </h3>
+                              <ProjectStatusBadge status={brief.status || "active"} />
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {brief.description}
+                            </p>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              {brief.budget && (
+                                <span className="flex items-center gap-1">
+                                  <DollarSign className="w-3 h-3" />
+                                  {brief.budget}
+                                </span>
+                              )}
+                              {brief.timelineWeeks && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {brief.timelineWeeks} weeks
+                                </span>
+                              )}
+                            </div>
+                            {brief.modules && brief.modules.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {brief.modules.slice(0, 2).map((module) => (
+                                  <Badge key={module} variant="outline" className="text-xs">
+                                    {module}
+                                  </Badge>
+                                ))}
+                                {brief.modules.length > 2 && (
+                                  <Badge variant="outline" className="text-xs text-muted-foreground">
+                                    +{brief.modules.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+
+                  {clientBriefs.length > 0 && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => navigate("/client/dashboard")}
+                      data-testid="button-view-all-projects"
+                    >
+                      Manage all projects
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
           </ScrollArea>

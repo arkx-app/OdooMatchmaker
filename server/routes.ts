@@ -7,7 +7,7 @@ import {
   insertBriefSchema, insertMessageSchema, insertProjectSchema,
   updateMatchSchema
 } from "@shared/schema";
-import { seedPartners } from "./seed-data";
+import { seedPartners, seedBriefsForClient } from "./seed-data";
 
 function calculateMatchScore(brief: any, partner: any): { score: number; breakdown: any; reasons: string[] } {
   const breakdown: any = {};
@@ -307,11 +307,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/clients/:clientId/briefs", async (req, res) => {
+  app.get("/api/clients/:clientId/briefs", isAuthenticated, async (req: any, res) => {
     try {
-      const briefs = await storage.getBriefsByClient(req.params.clientId);
-      res.json(briefs);
+      let clientBriefs = await storage.getBriefsByClient(req.params.clientId);
+      
+      // Auto-seed sample projects for demo if client has no briefs (only in development)
+      if (clientBriefs.length === 0 && process.env.NODE_ENV === "development") {
+        console.log("No briefs found for client, seeding sample projects...");
+        await seedBriefsForClient(req.params.clientId);
+        clientBriefs = await storage.getBriefsByClient(req.params.clientId);
+      }
+      
+      res.json(clientBriefs);
     } catch (error) {
+      console.error("Failed to fetch briefs:", error);
       res.status(500).json({ message: "Failed to fetch briefs" });
     }
   });
@@ -328,8 +337,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ briefs: [], hasProfile: false });
       }
 
-      const briefs = await storage.getBriefsByClient(client.id);
-      res.json({ briefs, hasProfile: true, clientId: client.id });
+      let clientBriefs = await storage.getBriefsByClient(client.id);
+      
+      // Auto-seed sample projects for demo if client has no briefs (only in development)
+      if (clientBriefs.length === 0 && process.env.NODE_ENV === "development") {
+        console.log("No briefs found for client, seeding sample projects...");
+        await seedBriefsForClient(client.id);
+        clientBriefs = await storage.getBriefsByClient(client.id);
+      }
+
+      res.json({ briefs: clientBriefs, hasProfile: true, clientId: client.id });
     } catch (error) {
       console.error("Error fetching user briefs:", error);
       res.status(500).json({ message: "Failed to fetch briefs" });
