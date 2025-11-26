@@ -15,6 +15,7 @@ import PartnerSignup from "@/pages/partner-signup";
 import Pricing from "@/pages/pricing";
 import Auth from "@/pages/auth";
 import ClientBrief from "@/pages/client-brief";
+import ClientDashboard from "@/pages/client-dashboard";
 import PartnerDashboard from "@/pages/partner-dashboard-gamified";
 import Messaging from "@/pages/messaging";
 import PartnerAnalytics from "@/pages/partner-analytics";
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/client/signup" component={ClientSignup} />
       <Route path="/client-signup" component={ClientSignup} />
       <Route path="/client/briefs" component={ClientBrief} />
+      <Route path="/client/dashboard" component={ClientDashboard} />
       <Route path="/partner/signup" component={PartnerSignup} />
       <Route path="/partner-signup" component={PartnerSignup} />
       <Route path="/partner/dashboard" component={PartnerDashboard} />
