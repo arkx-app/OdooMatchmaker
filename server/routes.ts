@@ -1,18 +1,17 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { 
-  insertPartnerSchema, insertClientSchema, insertMatchSchema, insertUserSchema,
+  insertPartnerSchema, insertClientSchema, insertMatchSchema,
   insertBriefSchema, insertMessageSchema, insertProjectSchema
 } from "@shared/schema";
 
-// Simple matching algorithm
 function calculateMatchScore(brief: any, partner: any): { score: number; breakdown: any; reasons: string[] } {
   const breakdown: any = {};
   const reasons: string[] = [];
   let score = 0;
 
-  // Module fit (30%)
   const briefModules = (brief.modules || []).map((m: string) => m.toLowerCase());
   const partnerServices = (partner.services || []).map((s: string) => s.toLowerCase());
   const moduleMatches = briefModules.filter((m: string) => 
@@ -22,29 +21,24 @@ function calculateMatchScore(brief: any, partner: any): { score: number; breakdo
   breakdown.moduleFit = Math.round(moduleFit);
   score += moduleFit * 0.3;
 
-  // Industry match (25%)
   const industryMatch = partner.industry.toLowerCase() === brief.clientId ? 50 : 
                        partner.industry.toLowerCase().includes(brief.clientId?.substring(0, 3)) ? 70 : 40;
   breakdown.industryMatch = industryMatch;
   score += industryMatch * 0.25;
 
-  // Budget fit (20%)
-  const partnerAvgRate = (partner.hourlyRateMin + partner.hourlyRateMax) / 2 / 100; // normalize
+  const partnerAvgRate = (partner.hourlyRateMin + partner.hourlyRateMax) / 2 / 100;
   const budgetFit = Math.min(100, 50 + (50 - Math.abs(50 - partnerAvgRate)) * 0.5);
   breakdown.budgetFit = Math.round(budgetFit);
   score += budgetFit * 0.2;
 
-  // Capacity (10%)
   const capacityScore = partner.capacity === "available" ? 100 : partner.capacity === "limited" ? 60 : 30;
   breakdown.capacity = capacityScore;
   score += capacityScore * 0.1;
 
-  // Rating (15%)
-  const ratingScore = (partner.rating || 3) * 20; // 1-5 star to 20-100
+  const ratingScore = (partner.rating || 3) * 20;
   breakdown.rating = ratingScore;
   score += ratingScore * 0.15;
 
-  // Generate reasons
   if (breakdown.moduleFit > 70) reasons.push(`Strong module match (${moduleMatches}/${briefModules.length})`);
   if (breakdown.industryMatch > 60) reasons.push(`Experience in ${partner.industry}`);
   if (breakdown.budgetFit > 70) reasons.push(`Budget-aligned rates`);
@@ -59,69 +53,78 @@ function calculateMatchScore(brief: any, partner: any): { score: number; breakdo
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // === AUTH ===
-  app.post("/api/auth/register", async (req, res) => {
+  await setupAuth(app);
+
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const validatedUser = insertUserSchema.parse(req.body);
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
       
-      // Check if email exists
-      const existing = await storage.getUserByEmail(validatedUser.email);
-      if (existing) {
-        return res.status(400).json({ message: "Email already registered" });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
       }
 
-      const user = await storage.createUser(validatedUser);
-      
-      // Create profile based on role
-      if (validatedUser.role === "partner") {
-        const partner = await storage.createPartner({
-          userId: user.id,
-          name: validatedUser.name,
-          email: validatedUser.email,
-          company: req.body.company || "",
-          industry: req.body.industry || "",
-          services: req.body.services || [],
-        });
-        return res.status(201).json({ user, profile: partner });
-      } else {
-        const client = await storage.createClient({
-          userId: user.id,
-          name: validatedUser.name,
-          email: validatedUser.email,
-          company: req.body.company || "",
-          industry: req.body.industry || "",
-          budget: req.body.budget || "not-specified",
-        });
-        return res.status(201).json({ user, profile: client });
-      }
-    } catch (error) {
-      res.status(400).json({ message: "Invalid registration data", error });
-    }
-  });
-
-  app.post("/api/auth/login", async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      const user = await storage.getUserByEmail(email);
-      
-      if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-
-      // Get profile
+      let profile = null;
       if (user.role === "partner") {
-        const profile = await storage.getPartnerByUserId(user.id);
-        return res.json({ user, profile });
-      } else {
-        const profile = await storage.getClientByUserId(user.id);
-        return res.json({ user, profile });
+        profile = await storage.getPartnerByUserId(userId);
+      } else if (user.role === "client") {
+        profile = await storage.getClientByUserId(userId);
       }
+
+      res.json({ ...user, profile });
     } catch (error) {
-      res.status(400).json({ message: "Login failed", error });
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
     }
   });
 
-  // === PARTNERS ===
+  app.post('/api/auth/complete-signup', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { role, company, industry, services, budget } = req.body;
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      await storage.updateUserRole(userId, role);
+
+      if (role === "partner") {
+        const existingPartner = await storage.getPartnerByUserId(userId);
+        if (!existingPartner) {
+          const partner = await storage.createPartner({
+            userId,
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Partner',
+            email: user.email || '',
+            company: company || "",
+            industry: industry || "",
+            services: services || [],
+          });
+          return res.status(201).json({ user: { ...user, role }, profile: partner });
+        }
+        return res.json({ user: { ...user, role }, profile: existingPartner });
+      } else {
+        const existingClient = await storage.getClientByUserId(userId);
+        if (!existingClient) {
+          const client = await storage.createClient({
+            userId,
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Client',
+            email: user.email || '',
+            company: company || "",
+            industry: industry || "",
+            budget: budget || "not-specified",
+          });
+          return res.status(201).json({ user: { ...user, role }, profile: client });
+        }
+        return res.json({ user: { ...user, role }, profile: existingClient });
+      }
+    } catch (error) {
+      console.error("Signup completion error:", error);
+      res.status(400).json({ message: "Failed to complete signup", error });
+    }
+  });
+
   app.get("/api/partners", async (_req, res) => {
     try {
       const partners = await storage.getAllPartners();
@@ -141,11 +144,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/partners", async (req, res) => {
+  app.post("/api/partners", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const dataWithUserId = {
         ...req.body,
-        userId: req.body.userId || `user-${Date.now()}`,
+        userId,
       };
       const validatedData = insertPartnerSchema.parse(dataWithUserId);
       const partner = await storage.createPartner(validatedData);
@@ -156,7 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/partners/:id", async (req, res) => {
+  app.patch("/api/partners/:id", isAuthenticated, async (req, res) => {
     try {
       const partner = await storage.updatePartner(req.params.id, req.body);
       if (!partner) return res.status(404).json({ message: "Partner not found" });
@@ -166,12 +170,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // === CLIENTS ===
-  app.post("/api/clients", async (req, res) => {
+  app.post("/api/clients", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const dataWithUserId = {
         ...req.body,
-        userId: req.body.userId || `user-${Date.now()}`,
+        userId,
       };
       const validatedData = insertClientSchema.parse(dataWithUserId);
       const client = await storage.createClient(validatedData);
@@ -192,13 +196,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // === BRIEFS ===
-  app.post("/api/briefs", async (req, res) => {
+  app.post("/api/briefs", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertBriefSchema.parse(req.body);
       const brief = await storage.createBrief(validatedData);
       
-      // Auto-generate matches for this brief
       const partners = await storage.getAllPartners();
       const matches = partners
         .map(partner => {
@@ -214,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         })
         .sort((a, b) => b.score - a.score)
-        .slice(0, 10); // Top 10 matches
+        .slice(0, 10);
 
       for (const matchData of matches) {
         await storage.createMatch(matchData);
@@ -260,7 +262,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // === MATCHES ===
   app.get("/api/matches/partner/:partnerId", async (req, res) => {
     try {
       const matches = await storage.getMatchesByPartner(req.params.partnerId);
@@ -292,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/matches", async (req, res) => {
+  app.post("/api/matches", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertMatchSchema.parse(req.body);
       const match = await storage.createMatch(validatedData);
@@ -302,7 +303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/matches/:id", async (req, res) => {
+  app.patch("/api/matches/:id", isAuthenticated, async (req, res) => {
     try {
       const match = await storage.updateMatch(req.params.id, {
         ...req.body,
@@ -315,8 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // === MESSAGES ===
-  app.post("/api/messages", async (req, res) => {
+  app.post("/api/messages", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertMessageSchema.parse(req.body);
       const message = await storage.createMessage(validatedData);
@@ -335,7 +335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/messages/match/:matchId/read", async (req, res) => {
+  app.post("/api/messages/match/:matchId/read", isAuthenticated, async (req, res) => {
     try {
       const { userId } = req.body;
       await storage.markMessagesAsRead(req.params.matchId, userId);
@@ -345,19 +345,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // === PROJECTS ===
-  app.post("/api/projects", async (req, res) => {
+  app.post("/api/projects", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertProjectSchema.parse(req.body);
       const project = await storage.createProject(validatedData);
-      // Update match status
-      const matchId = validatedData.matchId;
-      if (matchId) {
-        const matches = Array.from((await storage as any).matches?.values?.() || []);
-        const match = matches.find((m: any) => m.id === matchId);
-        if (match) {
-          await storage.updateMatch(matchId, { status: "converted" });
-        }
+      if (validatedData.matchId) {
+        await storage.updateMatch(validatedData.matchId, { status: "converted" });
       }
       res.status(201).json(project);
     } catch (error) {
@@ -374,7 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/projects/:id", async (req, res) => {
+  app.patch("/api/projects/:id", isAuthenticated, async (req, res) => {
     try {
       const project = await storage.updateProject(req.params.id, req.body);
       if (!project) return res.status(404).json({ message: "Project not found" });
@@ -384,7 +377,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // === ANALYTICS ===
   app.get("/api/analytics/partner/:partnerId", async (req, res) => {
     try {
       const metrics = await storage.getPartnerMetrics(req.params.partnerId);
