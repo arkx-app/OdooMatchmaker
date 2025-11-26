@@ -1,13 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Briefcase, MessageSquare } from "lucide-react";
+import { Briefcase, MessageSquare, LogOut } from "lucide-react";
 
 export default function PartnerDashboard() {
   const profile = JSON.parse(localStorage.getItem("profile") || "{}");
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
+  const [, navigate] = useLocation();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    localStorage.removeItem("profile");
+    navigate("/");
+  };
 
   const { data: matches = [], isLoading } = useQuery({
     queryKey: ["/api/matches", profile.id],
@@ -34,10 +44,22 @@ export default function PartnerDashboard() {
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">My Lead Pipeline</h1>
-        <p className="text-muted-foreground mb-8">
-          {matches.length} potential clients waiting for your response
-        </p>
+        <div className="flex items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">My Lead Pipeline</h1>
+            <p className="text-muted-foreground">
+              {matches.length} potential clients waiting for your response
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleLogout}
+            data-testid="button-logout"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Matches List */}

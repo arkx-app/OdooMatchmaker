@@ -32,6 +32,10 @@ export default function GuideBot({ steps, onComplete, isPartner }: GuideBotProps
   if (completed && !isOpen) return null;
 
   const step = steps[currentStep];
+  
+  if (!step) {
+    return null;
+  }
 
   return (
     <>

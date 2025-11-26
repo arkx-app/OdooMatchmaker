@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { X, Heart, ArrowLeft, Sparkles, Award } from "lucide-react";
+import { X, Heart, ArrowLeft, Sparkles, Award, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
 import type { Partner } from "@shared/schema";
 import MatchModal from "@/components/match-modal";
 import GuideBot from "@/components/guide-bot";
 import { AchievementsList } from "@/components/achievement-badge";
 import { useGamification } from "@/hooks/use-gamification";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 const CLIENT_GUIDE_STEPS = [
@@ -48,6 +49,14 @@ export default function ClientSwipe() {
   const [clientId] = useState(() => `client-${Date.now()}`);
   const { stats, recordSwipe, recordMatch, newAchievements } = useGamification("clientGamification");
   const [showAchievements, setShowAchievements] = useState(false);
+  const [, navigate] = useLocation();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    localStorage.removeItem("profile");
+    navigate("/");
+  };
 
   const { data: partners = [], isLoading } = useQuery<Partner[]>({
     queryKey: ["/api/partners"],
@@ -161,7 +170,7 @@ export default function ClientSwipe() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-50 backdrop-blur-lg">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-2">
           <Link href="/">
             <Button variant="ghost" size="icon" data-testid="button-back">
               <ArrowLeft className="w-5 h-5" />
@@ -173,14 +182,24 @@ export default function ClientSwipe() {
             </h1>
             <p className="text-xs text-muted-foreground">Swipes: {stats.totalSwipes} | Points: {stats.totalPoints}</p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowAchievements(!showAchievements)}
-            data-testid="button-achievements"
-          >
-            <Award className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowAchievements(!showAchievements)}
+              data-testid="button-achievements"
+            >
+              <Award className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              data-testid="button-logout"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </header>
 

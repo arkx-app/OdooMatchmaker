@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -161,6 +161,12 @@ export default function ClientSignup() {
     mutation.mutate(data);
   };
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/client/swipe");
+    }
+  }, [isAuthenticated, navigate]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -170,7 +176,6 @@ export default function ClientSignup() {
   }
 
   if (isAuthenticated) {
-    navigate("/client/swipe");
     return null;
   }
 
