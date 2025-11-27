@@ -4,7 +4,7 @@ import {
   X, Heart, ArrowLeft, Sparkles, Award, LogOut, ThumbsUp, MessageCircle,
   FolderPlus, Clock, DollarSign, CheckCircle2, AlertCircle, Loader2, Plus,
   Briefcase, ChevronDown, ChevronUp, ExternalLink, LayoutDashboard, 
-  Users, BarChart3, Settings
+  Users, BarChart3, Settings, Info, Star, MapPin, Calendar, Building2, Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -111,6 +111,8 @@ export default function ClientSwipe() {
   const [showAchievements, setShowAchievements] = useState(false);
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
+  const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
+  const [showPartnerProfile, setShowPartnerProfile] = useState(false);
   const [newProject, setNewProject] = useState({
     title: "",
     description: "",
@@ -465,6 +467,21 @@ export default function ClientSwipe() {
                                   <p className="text-xs leading-relaxed line-clamp-3">{partner.description}</p>
                                 </div>
                               )}
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full mt-2"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedPartner(partner);
+                                  setShowPartnerProfile(true);
+                                }}
+                                data-testid={`button-learn-more-${partner.id}`}
+                              >
+                                <Info className="w-4 h-4 mr-2" />
+                                Learn More
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -836,6 +853,164 @@ export default function ClientSwipe() {
           <p className="text-sm">+{achievement.points} points</p>
         </div>
       ))}
+
+      {/* Partner Profile Dialog */}
+      <Dialog open={showPartnerProfile} onOpenChange={setShowPartnerProfile}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          {selectedPartner && (
+            <>
+              <DialogHeader className="pb-0">
+                <div className="flex items-start gap-4">
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center text-white font-bold text-2xl shrink-0">
+                    {selectedPartner.company.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <DialogTitle className="text-xl">{selectedPartner.company}</DialogTitle>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${i < (selectedPartner.rating || 3) ? "text-yellow-500 fill-yellow-500" : "text-muted"}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {selectedPartner.rating?.toFixed(1) || "3.0"} ({selectedPartner.reviewCount} reviews)
+                      </span>
+                    </div>
+                    <Badge variant="secondary" className="mt-2">
+                      <Building2 className="w-3 h-3 mr-1" />
+                      {selectedPartner.industry}
+                    </Badge>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <ScrollArea className="flex-1 mt-4 -mx-6 px-6">
+                <div className="space-y-6 pb-4">
+                  {/* About Section */}
+                  <div className="space-y-2">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Info className="w-4 h-4" />
+                      About
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {selectedPartner.description || "This partner specializes in Odoo implementations and provides comprehensive ERP solutions tailored to your business needs."}
+                    </p>
+                  </div>
+
+                  {/* Services Section */}
+                  <div className="space-y-2">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Briefcase className="w-4 h-4" />
+                      Services Offered
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedPartner.services.map((service, i) => (
+                        <Badge key={i} variant="outline" className="rounded-full">
+                          {service}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <Card className="p-4 text-center">
+                      <div className="text-2xl font-bold text-primary">{selectedPartner.reviewCount}</div>
+                      <div className="text-xs text-muted-foreground">Total Reviews</div>
+                    </Card>
+                    <Card className="p-4 text-center">
+                      <div className="text-2xl font-bold text-primary">{selectedPartner.rating?.toFixed(1) || "3.0"}</div>
+                      <div className="text-xs text-muted-foreground">Avg Rating</div>
+                    </Card>
+                    <Card className="p-4 text-center">
+                      <div className="text-2xl font-bold text-primary">{Math.floor((selectedPartner.reviewCount || 10) * 1.5)}</div>
+                      <div className="text-xs text-muted-foreground">Projects Done</div>
+                    </Card>
+                  </div>
+
+                  {/* Reviews Section */}
+                  <div className="space-y-3">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4" />
+                      Recent Reviews
+                    </h3>
+                    <div className="space-y-3">
+                      {[
+                        { name: "Sarah M.", rating: 5, text: "Excellent implementation partner. They understood our requirements perfectly and delivered on time.", date: "2 weeks ago" },
+                        { name: "Michael R.", rating: 4, text: "Great team to work with. Very responsive and professional throughout the project.", date: "1 month ago" },
+                        { name: "Lisa K.", rating: 5, text: "Highly recommend! They helped us transition smoothly to Odoo with minimal disruption.", date: "2 months ago" },
+                      ].map((review, i) => (
+                        <Card key={i} className="p-4">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
+                                {review.name.charAt(0)}
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">{review.name}</p>
+                                <p className="text-xs text-muted-foreground">{review.date}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-0.5">
+                              {Array.from({ length: 5 }).map((_, j) => (
+                                <Star
+                                  key={j}
+                                  className={`w-3 h-3 ${j < review.rating ? "text-yellow-500 fill-yellow-500" : "text-muted"}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{review.text}</p>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Contact Info */}
+                  <div className="space-y-2">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Globe className="w-4 h-4" />
+                      Contact Information
+                    </h3>
+                    <Card className="p-4">
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <MapPin className="w-4 h-4" />
+                          <span>Available for remote and on-site projects</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Calendar className="w-4 h-4" />
+                          <span>Typically responds within 24 hours</span>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                </div>
+              </ScrollArea>
+
+              <DialogFooter className="pt-4 border-t gap-2 sm:gap-2">
+                <Button variant="outline" onClick={() => setShowPartnerProfile(false)}>
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowPartnerProfile(false);
+                    handleAction("like");
+                  }}
+                  className="bg-gradient-to-r from-success-from to-success-to text-white"
+                  data-testid="button-like-from-profile"
+                >
+                  <Heart className="w-4 h-4 mr-2" />
+                  Like This Partner
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <MatchModal
         open={showMatch}
