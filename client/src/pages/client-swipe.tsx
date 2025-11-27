@@ -956,18 +956,6 @@ export default function ClientSwipe() {
         </div>
       )}
 
-      {/* New Achievement Popup */}
-      {newAchievements.map((achievement) => (
-        <div
-          key={achievement.id}
-          className="fixed top-20 right-6 bg-gradient-to-r from-yellow-400 to-orange-400 text-white p-4 rounded-lg shadow-lg z-50 animate-bounce"
-          data-testid={`achievement-popup-${achievement.id}`}
-        >
-          <p className="font-bold">{achievement.name}</p>
-          <p className="text-sm">+{achievement.points} points</p>
-        </div>
-      ))}
-
       {/* Partner Profile Dialog */}
       <Dialog open={showPartnerProfile} onOpenChange={setShowPartnerProfile}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
