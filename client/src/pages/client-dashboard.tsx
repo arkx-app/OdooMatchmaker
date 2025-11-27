@@ -8,7 +8,8 @@ import {
   Briefcase, Settings, HelpCircle, BookOpen, Globe, 
   DollarSign, Shield, ChevronDown, CheckCircle2, AlertCircle,
   Zap, TrendingUp, BarChart3, Target, Layers, ArrowRight,
-  Edit, Plus, ExternalLink, Mail, Phone, MapPin, BadgeCheck
+  Edit, Plus, ExternalLink, Mail, Phone, MapPin, BadgeCheck,
+  Lock, Crown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -583,11 +584,62 @@ export default function ClientDashboard() {
     partner: partners.find(p => p.id === match.partnerId),
   }));
 
-  const likedPartners = enrichedMatches.filter((m) => m.clientLiked && m.partner);
-  const savedPartners = enrichedMatches.filter((m) => m.clientSaved && m.partner);
-  const confirmedMatches = enrichedMatches.filter((m) => 
+  // Sample demo data for freemium display
+  const samplePartners = [
+    { id: "demo-1", name: "John Smith", email: "john@odootech.com", company: "OdooTech Solutions", industry: "Technology", services: ["ERP Implementation", "Custom Development", "Training"], rating: 4.8, reviewCount: 127, description: "Leading Odoo partner with 10+ years of experience" },
+    { id: "demo-2", name: "Sarah Johnson", email: "sarah@erpmasters.com", company: "ERP Masters Inc", industry: "Manufacturing", services: ["Manufacturing Module", "Inventory", "Quality Control"], rating: 4.6, reviewCount: 89, description: "Specialized in manufacturing and supply chain solutions" },
+    { id: "demo-3", name: "Michael Chen", email: "michael@cloudfirst.com", company: "CloudFirst Partners", industry: "Retail", services: ["POS Systems", "E-commerce", "CRM"], rating: 4.9, reviewCount: 156, description: "Expert retail and e-commerce Odoo implementations" },
+    { id: "demo-4", name: "Emily Davis", email: "emily@digitaltransform.com", company: "Digital Transform Co", industry: "Healthcare", services: ["Healthcare ERP", "Compliance", "Patient Management"], rating: 4.7, reviewCount: 64, description: "Healthcare industry specialists" },
+    { id: "demo-5", name: "Robert Wilson", email: "robert@agileerp.com", company: "Agile ERP Group", industry: "Finance", services: ["Accounting", "Financial Reporting", "Audit"], rating: 4.5, reviewCount: 98, description: "Financial services and accounting experts" },
+    { id: "demo-6", name: "Lisa Anderson", email: "lisa@nextgen.com", company: "NextGen Solutions", industry: "E-commerce", services: ["Website Builder", "Payment Integration", "Shipping"], rating: 4.8, reviewCount: 112, description: "E-commerce and online business specialists" },
+    { id: "demo-7", name: "David Brown", email: "david@enterprisehub.com", company: "Enterprise Hub", industry: "Logistics", services: ["Fleet Management", "Warehouse", "Distribution"], rating: 4.4, reviewCount: 76, description: "Logistics and supply chain experts" },
+  ] as Partner[];
+
+  const sampleLikedMatches = samplePartners.slice(0, 5).map((partner, idx) => ({
+    id: `demo-like-${idx}`,
+    clientId: clientId || "demo-client",
+    partnerId: partner.id,
+    clientLiked: true,
+    partnerAccepted: idx < 2,
+    status: idx < 2 ? "matched" : "pending",
+    partner,
+  })) as EnrichedMatch[];
+
+  const sampleSavedMatches = samplePartners.slice(2, 5).map((partner, idx) => ({
+    id: `demo-saved-${idx}`,
+    clientId: clientId || "demo-client",
+    partnerId: partner.id,
+    clientLiked: true,
+    clientSaved: true,
+    partnerAccepted: idx === 0,
+    status: idx === 0 ? "matched" : "pending",
+    partner,
+  })) as EnrichedMatch[];
+
+  const sampleConfirmedMatches = samplePartners.slice(0, 3).map((partner, idx) => ({
+    id: `demo-match-${idx}`,
+    clientId: clientId || "demo-client",
+    partnerId: partner.id,
+    clientLiked: true,
+    partnerAccepted: true,
+    status: "matched",
+    partner,
+  })) as EnrichedMatch[];
+
+  // Combine real data with sample data (sample data shows when no real data)
+  const realLikedPartners = enrichedMatches.filter((m) => m.clientLiked && m.partner);
+  const realSavedPartners = enrichedMatches.filter((m) => m.clientSaved && m.partner);
+  const realConfirmedMatches = enrichedMatches.filter((m) => 
     (m.status === "matched" || (m.clientLiked && m.partnerAccepted)) && m.partner
   );
+
+  // Use sample data if no real data exists
+  const likedPartners = realLikedPartners.length > 0 ? realLikedPartners : sampleLikedMatches;
+  const savedPartners = realSavedPartners.length > 0 ? realSavedPartners : sampleSavedMatches;
+  const confirmedMatches = realConfirmedMatches.length > 0 ? realConfirmedMatches : sampleConfirmedMatches;
+
+  // Free tier limit for premium feature
+  const FREE_LIKES_LIMIT = 3;
 
   const applyFilters = (matches: EnrichedMatch[]) => {
     return matches.filter(m => {
@@ -1031,9 +1083,17 @@ export default function ClientDashboard() {
 
             {activeSection === "liked" && (
               <div className="space-y-6">
-                <div>
-                  <h2 className="text-xl font-semibold">Liked Partners</h2>
-                  <p className="text-muted-foreground">Partners you've expressed interest in</p>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <h2 className="text-xl font-semibold">Liked Partners</h2>
+                    <p className="text-muted-foreground">Partners you've expressed interest in</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {Math.min(filteredLiked.length, FREE_LIKES_LIMIT)} of {filteredLiked.length} visible
+                    </Badge>
+                    <Badge variant="secondary" className="text-xs">Free Tier</Badge>
+                  </div>
                 </div>
 
                 {filteredLiked.length === 0 ? (
@@ -1055,23 +1115,90 @@ export default function ClientDashboard() {
                     )}
                   </Card>
                 ) : (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {filteredLiked.map((match) => (
-                      match.partner && (
-                        <EnhancedPartnerCard
-                          key={match.id}
-                          partner={match.partner}
-                          match={match}
-                          onSave={handleSave}
-                          onMessage={handleMessage}
-                          onRequestProposal={handleRequestProposal}
-                          onBookCall={handleBookCall}
-                          onViewProfile={handleViewProfile}
-                          isSaving={saveMutation.isPending}
-                        />
-                      )
-                    ))}
-                  </div>
+                  <>
+                    {/* Visible likes within free tier */}
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {filteredLiked.slice(0, FREE_LIKES_LIMIT).map((match) => (
+                        match.partner && (
+                          <EnhancedPartnerCard
+                            key={match.id}
+                            partner={match.partner}
+                            match={match}
+                            onSave={handleSave}
+                            onMessage={handleMessage}
+                            onRequestProposal={handleRequestProposal}
+                            onBookCall={handleBookCall}
+                            onViewProfile={handleViewProfile}
+                            isSaving={saveMutation.isPending}
+                          />
+                        )
+                      ))}
+                    </div>
+
+                    {/* Premium upgrade prompt if there are more likes */}
+                    {filteredLiked.length > FREE_LIKES_LIMIT && (
+                      <>
+                        <Card className="p-6 bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-rose-500/10 border-amber-500/30">
+                          <div className="flex items-center justify-between flex-wrap gap-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                                <Crown className="w-6 h-6 text-white" />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold">Unlock All Your Matches</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {filteredLiked.length - FREE_LIKES_LIMIT} more partners are interested in working with you
+                                </p>
+                              </div>
+                            </div>
+                            <Button 
+                              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+                              data-testid="button-upgrade-premium-liked"
+                            >
+                              <Zap className="w-4 h-4 mr-2" />
+                              Upgrade to Premium
+                            </Button>
+                          </div>
+                        </Card>
+
+                        {/* Blurred/locked likes */}
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {filteredLiked.slice(FREE_LIKES_LIMIT).map((match) => (
+                            match.partner && (
+                              <Card key={match.id} className="relative overflow-hidden" data-testid={`locked-partner-${match.id}`}>
+                                {/* Blur overlay */}
+                                <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex items-center justify-center">
+                                  <div className="text-center p-4">
+                                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-2">
+                                      <Lock className="w-6 h-6 text-muted-foreground" />
+                                    </div>
+                                    <p className="font-medium text-sm">Premium Only</p>
+                                    <p className="text-xs text-muted-foreground">Upgrade to view this partner</p>
+                                  </div>
+                                </div>
+                                {/* Blurred content preview */}
+                                <CardContent className="p-4 opacity-50">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center text-white font-bold">
+                                      {match.partner.company?.charAt(0) || "?"}
+                                    </div>
+                                    <div className="flex-1">
+                                      <h3 className="font-semibold">{match.partner.company}</h3>
+                                      <p className="text-sm text-muted-foreground">{match.partner.industry}</p>
+                                      <div className="flex items-center gap-1 mt-1">
+                                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                        <span className="text-xs">{match.partner.rating}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            )
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
                 )}
               </div>
             )}
