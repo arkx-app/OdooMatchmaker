@@ -4,7 +4,8 @@ import {
   X, Heart, ArrowLeft, Sparkles, Award, LogOut, ThumbsUp, MessageCircle,
   FolderPlus, Clock, DollarSign, CheckCircle2, AlertCircle, Loader2, Plus,
   Briefcase, ChevronDown, ChevronUp, ExternalLink, LayoutDashboard, 
-  Users, BarChart3, Settings, Info, Star, MapPin, Calendar, Building2, Globe
+  Users, BarChart3, Settings, Info, Star, MapPin, Calendar, Building2, Globe,
+  Lock, Crown, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -547,49 +548,162 @@ export default function ClientSwipe() {
             <ScrollArea className="flex-1">
               {/* Likes Tab Content */}
               <TabsContent value="likes" className="m-0 p-4 space-y-3">
-                {likedPartners.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Heart className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
-                    <p className="text-muted-foreground font-medium">No likes yet</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Swipe right on partners you like
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {likedPartners.map((match) => (
-                      <Card key={match.id} className="p-3 overflow-visible hover-elevate" data-testid={`liked-partner-${match.partnerId}`}>
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center flex-shrink-0">
-                            <span className="text-sm font-bold text-white">
-                              {match.partner?.company?.charAt(0) || "?"}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-sm truncate">
-                              {match.partner?.company || "Unknown Partner"}
-                            </h3>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {match.partner?.industry}
-                            </p>
-                            {match.partnerAccepted && (
-                              <Badge variant="secondary" className="mt-1 text-xs bg-success-from/10 text-success-from border-success-from/20">
-                                Matched
-                              </Badge>
-                            )}
-                          </div>
-                          {match.partnerAccepted && (
-                            <Link href={`/messages/${match.id}`}>
-                              <Button size="icon" variant="ghost" data-testid={`button-message-${match.id}`}>
+                {/* Sample demo likes - always show these for freemium demo */}
+                {(() => {
+                  const sampleLikes = [
+                    { id: "demo-1", company: "OdooTech Solutions", industry: "Technology", rating: 4.8, matched: true, unlocked: true },
+                    { id: "demo-2", company: "ERP Masters Inc", industry: "Manufacturing", rating: 4.6, matched: true, unlocked: true },
+                    { id: "demo-3", company: "CloudFirst Partners", industry: "Retail", rating: 4.9, matched: false, unlocked: true },
+                    { id: "demo-4", company: "Digital Transform Co", industry: "Healthcare", rating: 4.7, matched: true, unlocked: false },
+                    { id: "demo-5", company: "Agile ERP Group", industry: "Finance", rating: 4.5, matched: false, unlocked: false },
+                    { id: "demo-6", company: "NextGen Solutions", industry: "E-commerce", rating: 4.8, matched: true, unlocked: false },
+                    { id: "demo-7", company: "Enterprise Hub", industry: "Logistics", rating: 4.4, matched: false, unlocked: false },
+                  ];
+
+                  const FREE_LIMIT = 3;
+                  const unlockedLikes = sampleLikes.filter((_, idx) => idx < FREE_LIMIT);
+                  const lockedLikes = sampleLikes.filter((_, idx) => idx >= FREE_LIMIT);
+
+                  return (
+                    <>
+                      {/* Free tier header */}
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-muted-foreground">
+                          {FREE_LIMIT} of {sampleLikes.length} likes visible
+                        </p>
+                        <Badge variant="outline" className="text-xs">
+                          Free Tier
+                        </Badge>
+                      </div>
+
+                      {/* Unlocked/visible likes */}
+                      {unlockedLikes.map((like) => (
+                        <Card key={like.id} className="p-3 overflow-visible hover-elevate" data-testid={`liked-partner-${like.id}`}>
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center flex-shrink-0">
+                              <span className="text-sm font-bold text-white">
+                                {like.company.charAt(0)}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-sm truncate">{like.company}</h3>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs text-muted-foreground truncate">{like.industry}</p>
+                                <div className="flex items-center gap-0.5">
+                                  <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                  <span className="text-xs text-muted-foreground">{like.rating}</span>
+                                </div>
+                              </div>
+                              {like.matched && (
+                                <Badge variant="secondary" className="mt-1 text-xs bg-success-from/10 text-success-from border-success-from/20">
+                                  Matched
+                                </Badge>
+                              )}
+                            </div>
+                            {like.matched && (
+                              <Button size="icon" variant="ghost" data-testid={`button-message-${like.id}`}>
                                 <MessageCircle className="w-4 h-4" />
                               </Button>
-                            </Link>
-                          )}
-                        </div>
-                      </Card>
-                    ))}
-                  </>
-                )}
+                            )}
+                          </div>
+                        </Card>
+                      ))}
+
+                      {/* Premium upgrade prompt */}
+                      {lockedLikes.length > 0 && (
+                        <Card className="p-4 bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-rose-500/10 border-amber-500/30">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                              <Crown className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-sm">Unlock All Matches</h4>
+                              <p className="text-xs text-muted-foreground">
+                                {lockedLikes.length} more partners want to connect
+                              </p>
+                            </div>
+                          </div>
+                          <Button 
+                            className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+                            data-testid="button-upgrade-premium"
+                          >
+                            <Zap className="w-4 h-4 mr-2" />
+                            Upgrade to Premium
+                          </Button>
+                        </Card>
+                      )}
+
+                      {/* Blurred/locked likes preview */}
+                      {lockedLikes.map((like) => (
+                        <Card key={like.id} className="p-3 overflow-visible relative" data-testid={`locked-partner-${like.id}`}>
+                          {/* Blur overlay */}
+                          <div className="absolute inset-0 bg-background/60 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center">
+                            <div className="text-center">
+                              <Lock className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
+                              <p className="text-xs text-muted-foreground font-medium">Premium Only</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3 opacity-50">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center flex-shrink-0">
+                              <span className="text-sm font-bold text-white">
+                                {like.company.charAt(0)}
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-sm truncate">{like.company}</h3>
+                              <p className="text-xs text-muted-foreground truncate">{like.industry}</p>
+                              {like.matched && (
+                                <Badge variant="secondary" className="mt-1 text-xs">
+                                  Matched
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+
+                      {/* Also show any real liked partners from API */}
+                      {likedPartners.length > 0 && (
+                        <>
+                          <div className="pt-2 border-t mt-4">
+                            <p className="text-xs text-muted-foreground mb-2">Your Recent Likes</p>
+                          </div>
+                          {likedPartners.slice(0, FREE_LIMIT).map((match) => (
+                            <Card key={match.id} className="p-3 overflow-visible hover-elevate" data-testid={`liked-partner-${match.partnerId}`}>
+                              <div className="flex items-start gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center flex-shrink-0">
+                                  <span className="text-sm font-bold text-white">
+                                    {match.partner?.company?.charAt(0) || "?"}
+                                  </span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-semibold text-sm truncate">
+                                    {match.partner?.company || "Unknown Partner"}
+                                  </h3>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {match.partner?.industry}
+                                  </p>
+                                  {match.partnerAccepted && (
+                                    <Badge variant="secondary" className="mt-1 text-xs bg-success-from/10 text-success-from border-success-from/20">
+                                      Matched
+                                    </Badge>
+                                  )}
+                                </div>
+                                {match.partnerAccepted && (
+                                  <Link href={`/messages/${match.id}`}>
+                                    <Button size="icon" variant="ghost" data-testid={`button-message-${match.id}`}>
+                                      <MessageCircle className="w-4 h-4" />
+                                    </Button>
+                                  </Link>
+                                )}
+                              </div>
+                            </Card>
+                          ))}
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
               </TabsContent>
 
               {/* Projects Tab Content */}
