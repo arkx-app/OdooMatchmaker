@@ -297,7 +297,7 @@ export default function ClientSignup() {
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input type="email" placeholder="you@company.com" className="pl-10" {...field} data-testid="input-email" />
+                            <Input type="email" placeholder="you@company.com" className="pl-10" autoComplete="email" {...field} data-testid="input-email" />
                           </div>
                         </FormControl>
                         <FormMessage />
