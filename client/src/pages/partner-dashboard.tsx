@@ -430,7 +430,7 @@ export default function PartnerDashboard() {
   });
 
   // Fetch current user and partner profile from API
-  const { data: currentUser, isLoading: userLoading } = useQuery<{
+  const { data: currentUser, isLoading: userLoading, error: userError } = useQuery<{
     id: string;
     email: string;
     firstName: string;
@@ -440,15 +440,38 @@ export default function PartnerDashboard() {
   }>({
     queryKey: ["/api/auth/user"],
     queryFn: async () => {
+      console.log("[PARTNER-DASHBOARD] Fetching user data...");
       const res = await fetch("/api/auth/user", { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch user");
-      return res.json();
+      if (!res.ok) {
+        console.error("[PARTNER-DASHBOARD] Failed to fetch user:", res.status);
+        throw new Error("Failed to fetch user");
+      }
+      const data = await res.json();
+      console.log("[PARTNER-DASHBOARD] User data received:", {
+        id: data.id,
+        email: data.email,
+        role: data.role,
+        hasProfile: !!data.profile,
+        profileId: data.profile?.id || "none"
+      });
+      return data;
     },
     retry: 1,
   });
 
   const partnerProfile = currentUser?.profile as Partner | undefined;
   const partnerId = partnerProfile?.id;
+
+  // Debug logging
+  useEffect(() => {
+    console.log("[PARTNER-DASHBOARD] State:", {
+      userLoading,
+      hasCurrentUser: !!currentUser,
+      userRole: currentUser?.role,
+      hasPartnerProfile: !!partnerProfile,
+      partnerId: partnerId || "none"
+    });
+  }, [userLoading, currentUser, partnerProfile, partnerId]);
 
   // Role-based protection: redirect non-partners to appropriate dashboard
   useEffect(() => {
@@ -694,12 +717,43 @@ export default function PartnerDashboard() {
     { id: "analytics", label: "Analytics", icon: BarChart3 },
   ];
 
-  if (userLoading || matchesLoading || !partnerProfile) {
+  // Show loading state while fetching user data
+  if (userLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle case where partner profile doesn't exist
+  if (!partnerProfile && currentUser?.role === "partner") {
+    console.error("[PARTNER-DASHBOARD] Partner profile missing for user:", currentUser?.email);
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-4xl mb-4">Profile Setup Required</div>
+          <p className="text-muted-foreground mb-4">
+            Your partner profile hasn't been set up yet. Please complete your profile setup to access the dashboard.
+          </p>
+          <Button onClick={() => navigate("/partner/signup")} data-testid="button-complete-setup">
+            Complete Profile Setup
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Still loading matches after profile is available
+  if (matchesLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading your matches...</p>
         </div>
       </div>
     );
@@ -712,11 +766,11 @@ export default function PartnerDashboard() {
           <SidebarHeader className="p-4 border-b">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
-                {partnerProfile.company?.charAt(0) || "P"}
+                {partnerProfile?.company?.charAt(0) || "P"}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm truncate">{partnerProfile.company || "Partner"}</p>
-                <p className="text-xs text-muted-foreground truncate">{partnerProfile.name}</p>
+                <p className="font-semibold text-sm truncate">{partnerProfile?.company || "Partner"}</p>
+                <p className="text-xs text-muted-foreground truncate">{partnerProfile?.name}</p>
               </div>
             </div>
           </SidebarHeader>
@@ -786,8 +840,8 @@ export default function PartnerDashboard() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 text-left min-w-0">
-                    <p className="text-sm font-medium truncate">{partnerProfile.name || "Partner"}</p>
-                    <p className="text-xs text-muted-foreground truncate">{partnerProfile.email}</p>
+                    <p className="text-sm font-medium truncate">{partnerProfile?.name || "Partner"}</p>
+                    <p className="text-xs text-muted-foreground truncate">{partnerProfile?.email}</p>
                   </div>
                   <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 </Button>

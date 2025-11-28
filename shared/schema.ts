@@ -170,11 +170,11 @@ export const insertPartnerSchema = createInsertSchema(partners).omit({
   logo: z.string().optional().nullable(),
   rating: z.number().optional(),
   reviewCount: z.number().optional(),
-  hourlyRateMin: z.number().optional(),
-  hourlyRateMax: z.number().optional(),
-  capacity: z.string().optional(),
-  certifications: z.array(z.string()).optional(),
-  website: z.string().optional(),
+  hourlyRateMin: z.number().optional().nullable(),
+  hourlyRateMax: z.number().optional().nullable(),
+  capacity: z.string().optional().nullable(),
+  certifications: z.array(z.string()).optional().nullable(),
+  website: z.string().optional().nullable(),
   verified: z.boolean().optional(),
 });
 
@@ -182,12 +182,12 @@ export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
   createdAt: true,
 }).extend({
-  projectTimeline: z.string().optional(),
-  odooModules: z.array(z.string()).optional(),
-  companySize: z.string().optional(),
-  website: z.string().optional(),
-  odooExperience: z.string().optional(),
-  urgency: z.string().optional(),
+  projectTimeline: z.string().optional().nullable(),
+  odooModules: z.array(z.string()).optional().nullable(),
+  companySize: z.string().optional().nullable(),
+  website: z.string().optional().nullable(),
+  odooExperience: z.string().optional().nullable(),
+  urgency: z.string().optional().nullable(),
 });
 
 export const insertBriefSchema = createInsertSchema(briefs).omit({
