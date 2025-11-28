@@ -53,7 +53,17 @@ function Router() {
 
 function App() {
   const [location] = useLocation();
-  const showNavbar = location === "/" || location === "/pricing";
+  
+  // Show navbar on public pages (home, pricing, get-started, book-demo, auth)
+  // Don't show on dashboards (they have their own sidebars) or signup/brief forms (they have back buttons)
+  const showNavbar = [
+    "/",
+    "/pricing",
+    "/get-started",
+    "/book-demo",
+    "/client-home",
+    "/partner-home",
+  ].includes(location) || location === "/auth";
 
   return (
     <QueryClientProvider client={queryClient}>
