@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 const benefits = [
-  "Discover vetted Odoo partners",
+  "Discover vetted ERP partners",
   "Match by industry, budget, and expertise",
   "Swipe to like or skip partners",
   "Get connected instantly when there's a match",
@@ -37,21 +37,21 @@ export default function ClientHome() {
           
           <div className="space-y-4">
             <h1 className="text-5xl font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent">
-              Find Your Perfect Odoo Partner
+              Find Your Perfect ERP Partner
             </h1>
             <p className="text-2xl text-muted-foreground">
-              Discover vetted Odoo experts matched to your business needs
+              Discover vetted ERP experts matched to your business needs
             </p>
           </div>
 
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Odoo Matchmaker uses intelligent matching to connect you with the right partners—based on your industry, budget, and expertise needs. Browse profiles, swipe to like or skip, and get matched instantly.
+            ERP Matcher uses intelligent matching to connect you with the right partners—based on your industry, budget, and expertise needs. Browse profiles, swipe to like or skip, and get matched instantly.
           </p>
         </section>
 
         {/* Benefits Card */}
         <Card className="p-12 bg-gradient-to-br from-client-from/5 via-transparent to-client-to/5">
-          <h2 className="text-2xl font-bold mb-6">Why Choose Odoo Matchmaker?</h2>
+          <h2 className="text-2xl font-bold mb-6">Why Choose ERP Matcher?</h2>
           <ul className="space-y-4">
             {benefits.map((benefit, index) => (
               <li key={index} className="flex items-start gap-3">
@@ -67,7 +67,7 @@ export default function ClientHome() {
           <div>
             <h2 className="text-3xl font-bold mb-3">Ready to Find Your Match?</h2>
             <p className="text-muted-foreground text-lg mb-8">
-              Start swiping and connect with qualified Odoo partners today
+              Start swiping and connect with qualified ERP partners today
             </p>
           </div>
 

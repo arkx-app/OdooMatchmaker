@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 const plans = [
   {
     name: "Starter",
-    description: "Perfect for new Odoo partners building their client base",
+    description: "Perfect for new ERP partners building their client base",
     monthlyPrice: 29,
     yearlyPrice: 279,
     features: [
@@ -89,7 +89,7 @@ export default function Pricing() {
             Partner Pricing
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Scale your Odoo business with high-quality, pre-qualified client leads. For clients, Odoo Matchmaker is completely free.
+            Scale your ERP business with high-quality, pre-qualified client leads. For clients, ERP Matcher is completely free.
           </p>
 
           <div className="flex items-center justify-center gap-4">
@@ -115,7 +115,7 @@ export default function Pricing() {
         <div className="bg-card/50 border rounded-lg p-6 text-center space-y-2">
           <p className="text-lg font-semibold">💡 Pricing for Partners Only</p>
           <p className="text-muted-foreground">
-            If you're a client looking for Odoo partners, you can browse and match for completely free. No hidden charges, no credit card required.
+            If you're a client looking for ERP partners, you can browse and match for completely free. No hidden charges, no credit card required.
           </p>
           <Link href="/split">
             <Button variant="outline" size="sm" className="mt-4">

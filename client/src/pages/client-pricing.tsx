@@ -96,10 +96,10 @@ export default function ClientPricing() {
             Client Plans
           </Badge>
           <h1 className="text-4xl md:text-5xl font-bold">
-            Find Your Perfect Odoo Partner
+            Find Your Perfect ERP Partner
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Unlock more matches, direct messaging, and advanced tools to find the right Odoo implementation partner for your business.
+            Unlock more matches, direct messaging, and advanced tools to find the right ERP implementation partner for your business.
           </p>
 
           <div className="flex items-center justify-center gap-4">

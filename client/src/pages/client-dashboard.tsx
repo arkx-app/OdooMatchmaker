@@ -783,10 +783,10 @@ export default function ClientDashboard() {
           <SidebarHeader className="p-4 border-b">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-md bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-white font-bold">
-                O
+                E
               </div>
               <div>
-                <h2 className="font-semibold text-sm">Odoo Matchmaker</h2>
+                <h2 className="font-semibold text-sm">ERP Matcher</h2>
                 <p className="text-xs text-muted-foreground">Client Dashboard</p>
               </div>
             </div>

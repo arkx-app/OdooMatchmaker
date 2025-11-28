@@ -25,7 +25,7 @@ const features = [
   {
     icon: Users,
     title: "Professional Network",
-    description: "Join a verified community of trusted Odoo partners",
+    description: "Join a verified community of trusted ERP partners",
   },
 ];
 
@@ -39,7 +39,7 @@ export default function PartnerHome() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <h1 className="text-xl font-bold">Grow Your Odoo Business</h1>
+          <h1 className="text-xl font-bold">Grow Your ERP Business</h1>
           <div className="w-10" />
         </div>
       </header>
@@ -55,15 +55,15 @@ export default function PartnerHome() {
           
           <div className="space-y-4">
             <h1 className="text-5xl font-bold bg-gradient-to-r from-partner-from to-partner-to bg-clip-text text-transparent">
-              Get High-Quality Odoo Leads
+              Get High-Quality ERP Leads
             </h1>
             <p className="text-2xl text-muted-foreground">
-              Grow your Odoo partnership business with qualified client matches
+              Grow your ERP partnership business with qualified client matches
             </p>
           </div>
 
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Stop spending time and money on marketing. Odoo Matchmaker delivers pre-qualified clients directly to you—matched by industry, budget, and project requirements. Browse opportunities, accept what fits, and get connected instantly.
+            Stop spending time and money on marketing. ERP Matcher delivers pre-qualified clients directly to you—matched by industry, budget, and project requirements. Browse opportunities, accept what fits, and get connected instantly.
           </p>
         </section>
 

@@ -22,7 +22,7 @@ export default function Navbar() {
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-partner-from to-partner-to bg-clip-text text-transparent">
-              Odoo Matchmaker
+              ERP Matcher
             </span>
           </Link>
 

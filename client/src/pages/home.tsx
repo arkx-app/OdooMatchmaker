@@ -7,7 +7,7 @@ const features = [
   {
     icon: Zap,
     title: "AI-Powered Matching",
-    description: "Our intelligent algorithm analyzes your needs and connects you with the perfect Odoo partner in seconds.",
+    description: "Our intelligent algorithm analyzes your needs and connects you with the perfect ERP partner in seconds.",
   },
   {
     icon: Shield,
@@ -71,7 +71,7 @@ export default function Home() {
           </h1>
           
           <p className="text-xl lg:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed">
-            Connect with verified Odoo partners or discover qualified clients. 
+            Connect with verified ERP partners or discover qualified clients. 
             Our intelligent platform makes finding the right match effortless.
           </p>
           
@@ -120,10 +120,10 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center space-y-4 mb-16">
             <h2 className="text-4xl lg:text-5xl font-bold">
-              Why Choose Odoo Matchmaker?
+              Why Choose ERP Matcher?
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              The most trusted platform for connecting Odoo clients with expert partners
+              The most trusted platform for connecting ERP clients with expert partners
             </p>
           </div>
 
@@ -183,7 +183,7 @@ export default function Home() {
               Ready to Find Your Perfect Match?
             </h2>
             <p className="text-xl text-muted-foreground">
-              Join thousands of users who have found their ideal Odoo partnership
+              Join thousands of users who have found their ideal ERP partnership
             </p>
           </div>
 

@@ -307,7 +307,7 @@ export default function ClientBrief() {
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">Describe Your Project</h2>
           <p className="text-muted-foreground">
-            Help us find the perfect partner for your Odoo implementation
+            Help us find the perfect partner for your ERP implementation
           </p>
         </div>
 
@@ -319,7 +319,7 @@ export default function ClientBrief() {
               <div>
                 <label className="text-sm font-medium">Project Title</label>
                 <Input
-                  placeholder="e.g., Odoo ERP Implementation for Retail"
+                  placeholder="e.g., ERP Implementation for Retail"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
@@ -366,7 +366,7 @@ export default function ClientBrief() {
           </Card>
 
           <Card className="p-6">
-            <h2 className="text-lg font-semibold mb-4">Odoo Modules Needed</h2>
+            <h2 className="text-lg font-semibold mb-4">ERP Modules Needed</h2>
             <div className="grid grid-cols-2 gap-3">
               {modules.map((module) => (
                 <button

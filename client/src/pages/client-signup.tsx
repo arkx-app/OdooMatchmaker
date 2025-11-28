@@ -61,10 +61,10 @@ const odooModules = [
 ];
 
 const odooExperienceLevels = [
-  { value: "none", label: "No experience - New to Odoo" },
+  { value: "none", label: "No experience - New to ERP systems" },
   { value: "beginner", label: "Beginner - Basic understanding" },
-  { value: "intermediate", label: "Intermediate - Used Odoo before" },
-  { value: "advanced", label: "Advanced - Extensive Odoo experience" },
+  { value: "intermediate", label: "Intermediate - Used ERP systems before" },
+  { value: "advanced", label: "Advanced - Extensive ERP experience" },
 ];
 
 const urgencyLevels = [

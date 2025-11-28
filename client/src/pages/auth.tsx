@@ -71,7 +71,7 @@ export default function AuthPage() {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Welcome Back</CardTitle>
             <CardDescription>
-              Sign in to your Odoo Matchmaker account
+              Sign in to your ERP Matcher account
             </CardDescription>
           </CardHeader>
           <CardContent>

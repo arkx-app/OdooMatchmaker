@@ -1,8 +1,8 @@
-# Odoo Matchmaker
+# ERP Matcher
 
 ## Overview
 
-Odoo Matchmaker is a B2B matchmaking platform that connects Odoo Partners with potential Clients through an intuitive, Tinder-style swipe interface. The application features a split-personality design with distinct experiences for Clients (who browse and select Partners) and Partners (who create profiles to be discovered). The platform uses a playful yet professional approach, combining dating app mechanics with enterprise software credibility to facilitate business connections in the Odoo ecosystem.
+ERP Matcher is a B2B matchmaking platform that connects ERP Partners with potential Clients through an intuitive, Tinder-style swipe interface. The application features a split-personality design with distinct experiences for Clients (who browse and select Partners) and Partners (who create profiles to be discovered). The platform uses a playful yet professional approach, combining dating app mechanics with enterprise software credibility to facilitate business connections in the ERP ecosystem.
 
 ## User Preferences
 

@@ -62,7 +62,7 @@ export default function Split() {
                 I'm a Client
               </h1>
               <p className="text-xl lg:text-2xl text-white/90 max-w-md mx-auto">
-                Find the perfect Odoo Partner for your business needs
+                Find the perfect ERP Partner for your business needs
               </p>
             </div>
             
