@@ -13,6 +13,7 @@ import ClientSwipe from "@/pages/client-swipe";
 import ClientSignup from "@/pages/client-signup";
 import PartnerSignup from "@/pages/partner-signup";
 import Pricing from "@/pages/pricing";
+import ClientPricing from "@/pages/client-pricing";
 import Auth from "@/pages/auth";
 import ClientBrief from "@/pages/client-brief";
 import ClientDashboard from "@/pages/client-dashboard";
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/partner/analytics" component={PartnerAnalytics} />
       <Route path="/messages/:id" component={({ id }: any) => <Messaging matchId={id} />} />
       <Route path="/pricing" component={Pricing} />
+      <Route path="/client/pricing" component={ClientPricing} />
       <Route component={NotFound} />
     </Switch>
   );
