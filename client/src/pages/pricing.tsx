@@ -310,9 +310,11 @@ export default function Pricing() {
               <p className="text-muted-foreground max-w-xl mx-auto">
                 Our team can help you find the perfect plan for your Odoo partnership business. Let's connect and discuss your goals.
               </p>
-              <Button variant="outline" size="lg" data-testid="button-schedule-demo">
-                Schedule a Demo
-              </Button>
+              <Link href="/book-demo">
+                <Button variant="outline" size="lg" data-testid="button-schedule-demo">
+                  Schedule a Demo
+                </Button>
+              </Link>
             </div>
           </div>
         )}

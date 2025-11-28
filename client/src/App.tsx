@@ -20,6 +20,7 @@ import ClientDashboard from "@/pages/client-dashboard";
 import PartnerDashboard from "@/pages/partner-dashboard";
 import Messaging from "@/pages/messaging";
 import PartnerAnalytics from "@/pages/partner-analytics";
+import BookDemo from "@/pages/book-demo";
 
 function Router() {
   return (
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/messages/:id" component={({ id }: any) => <Messaging matchId={id} />} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/client/pricing" component={ClientPricing} />
+      <Route path="/book-demo" component={BookDemo} />
       <Route component={NotFound} />
     </Switch>
   );
