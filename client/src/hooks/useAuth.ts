@@ -38,11 +38,24 @@ export function useAuth() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
+      console.log("[LOGOUT] Initiating logout request...");
       const response = await apiRequest("POST", "/api/auth/logout", {});
-      return await response.json();
+      const result = await response.json();
+      console.log("[LOGOUT] Server response:", result);
+      return result;
     },
     onSuccess: () => {
+      console.log("[LOGOUT] Clearing user data from cache...");
+      // Clear the user data immediately (not just invalidate)
+      queryClient.setQueryData(["/api/auth/user"], null);
+      // Also invalidate to prevent stale data
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      // Clear any other auth-related queries
+      queryClient.removeQueries({ queryKey: ["/api/auth/user"] });
+      console.log("[LOGOUT] Cache cleared successfully");
+    },
+    onError: (error) => {
+      console.error("[LOGOUT] Logout failed:", error);
     },
   });
 

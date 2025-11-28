@@ -24,11 +24,18 @@ export default function Navbar() {
   };
 
   const handleLogout = async () => {
+    console.log("[NAVBAR] Logout button clicked");
     try {
       await logout();
+      console.log("[NAVBAR] Logout successful, redirecting to /auth");
+      // Clear any localStorage items related to auth
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      sessionStorage.clear();
+      // Navigate to auth page
       setLocation("/auth");
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error("[NAVBAR] Logout failed:", error);
     }
   };
 
