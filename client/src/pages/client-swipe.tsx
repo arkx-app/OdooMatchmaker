@@ -958,38 +958,37 @@ export default function ClientSwipe() {
 
       {/* Partner Profile Dialog */}
       <Dialog open={showPartnerProfile} onOpenChange={setShowPartnerProfile}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-2xl max-h-[90vh] p-0 gap-0">
           {selectedPartner && (
-            <>
-              <DialogHeader className="pb-0">
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center text-white font-bold text-2xl shrink-0">
-                    {selectedPartner.company.charAt(0)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <DialogTitle className="text-xl">{selectedPartner.company}</DialogTitle>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="flex gap-0.5">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${i < (selectedPartner.rating || 3) ? "text-yellow-500 fill-yellow-500" : "text-muted"}`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {selectedPartner.rating?.toFixed(1) || "3.0"} ({selectedPartner.reviewCount} reviews)
-                      </span>
+            <ScrollArea className="max-h-[90vh]">
+              <div className="p-6">
+                <DialogHeader className="pb-4">
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center text-white font-bold text-2xl shrink-0">
+                      {selectedPartner.company.charAt(0)}
                     </div>
-                    <Badge variant="secondary" className="mt-2">
-                      <Building2 className="w-3 h-3 mr-1" />
-                      {selectedPartner.industry}
-                    </Badge>
+                    <div className="flex-1 min-w-0">
+                      <DialogTitle className="text-xl">{selectedPartner.company}</DialogTitle>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`w-4 h-4 ${i < (selectedPartner.rating || 3) ? "text-yellow-500 fill-yellow-500" : "text-muted"}`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {selectedPartner.rating?.toFixed(1) || "3.0"} ({selectedPartner.reviewCount} reviews)
+                        </span>
+                      </div>
+                      <Badge variant="secondary" className="mt-2">
+                        <Building2 className="w-3 h-3 mr-1" />
+                        {selectedPartner.industry}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
-              </DialogHeader>
-
-              <ScrollArea className="flex-1 mt-4 -mx-6 px-6">
+                </DialogHeader>
                 <div className="space-y-6 pb-4">
                   {/* About Section */}
                   <div className="space-y-2">
@@ -1090,26 +1089,27 @@ export default function ClientSwipe() {
                       </div>
                     </Card>
                   </div>
-                </div>
-              </ScrollArea>
 
-              <DialogFooter className="pt-4 border-t gap-2 sm:gap-2">
-                <Button variant="outline" onClick={() => setShowPartnerProfile(false)}>
-                  Close
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowPartnerProfile(false);
-                    handleAction("like");
-                  }}
-                  className="bg-gradient-to-r from-success-from to-success-to text-white"
-                  data-testid="button-like-from-profile"
-                >
-                  <ThumbsUp className="w-4 h-4 mr-2" />
-                  Like This Partner
-                </Button>
-              </DialogFooter>
-            </>
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-4 border-t sticky bottom-0 bg-background">
+                    <Button variant="outline" className="flex-1" onClick={() => setShowPartnerProfile(false)}>
+                      Close
+                    </Button>
+                    <Button
+                      className="flex-1 bg-gradient-to-r from-success-from to-success-to text-white"
+                      onClick={() => {
+                        setShowPartnerProfile(false);
+                        handleAction("like");
+                      }}
+                      data-testid="button-like-from-profile"
+                    >
+                      <ThumbsUp className="w-4 h-4 mr-2" />
+                      Like This Partner
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>
