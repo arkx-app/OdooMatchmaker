@@ -167,7 +167,7 @@ export default function ClientSignup() {
         title: "Welcome aboard!",
         description: "Your account and profile have been created successfully.",
       });
-      setTimeout(() => navigate("/client/swipe"), 2000);
+      setTimeout(() => navigate("/client/dashboard"), 2000);
     },
     onError: (error: any) => {
       console.error("Signup error:", error);
@@ -193,7 +193,7 @@ export default function ClientSignup() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/client/swipe");
+      navigate("/client/dashboard");
     }
   }, [isAuthenticated, navigate]);
 

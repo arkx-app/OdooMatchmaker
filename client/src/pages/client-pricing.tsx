@@ -73,14 +73,14 @@ export default function ClientPricing() {
 
   const handleSelectPlan = (planName: string) => {
     localStorage.setItem("selectedClientPlan", planName);
-    setLocation("/client/swipe");
+    setLocation("/client/dashboard");
   };
 
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-50 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
-          <Link href="/client/swipe">
+          <Link href="/client/dashboard">
             <Button variant="ghost" size="icon" data-testid="button-back">
               <ArrowLeft className="w-5 h-5" />
             </Button>

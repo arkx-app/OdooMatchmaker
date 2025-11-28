@@ -201,7 +201,7 @@ export default function Messaging({ matchId }: { matchId?: string }) {
     return (
       <div className="h-screen flex flex-col bg-background">
         <header className="border-b p-4 flex items-center gap-4 bg-card">
-          <Button variant="ghost" size="icon" onClick={() => setLocation(userRole === "partner" ? "/partner/dashboard" : "/client/swipe")}>
+          <Button variant="ghost" size="icon" onClick={() => setLocation(userRole === "partner" ? "/partner/dashboard" : "/client/dashboard")}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-xl font-semibold">Messages</h1>
@@ -219,7 +219,7 @@ export default function Messaging({ matchId }: { matchId?: string }) {
                 : "Like partners and wait for them to accept your match request. Once matched, you can start a conversation here."}
             </p>
             <Button 
-              onClick={() => setLocation(userRole === "partner" ? "/partner/dashboard" : "/client/swipe")}
+              onClick={() => setLocation(userRole === "partner" ? "/partner/dashboard" : "/client/dashboard")}
               data-testid="button-find-matches"
             >
               {userRole === "partner" ? "View Incoming Matches" : "Find Partners"}
@@ -237,7 +237,7 @@ export default function Messaging({ matchId }: { matchId?: string }) {
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={() => setLocation(userRole === "partner" ? "/partner/dashboard" : "/client/swipe")}
+          onClick={() => setLocation(userRole === "partner" ? "/partner/dashboard" : "/client/dashboard")}
           data-testid="button-back"
         >
           <ArrowLeft className="w-5 h-5" />
