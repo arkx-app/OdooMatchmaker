@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { 
-  Home, Heart, Bookmark, Users, ArrowLeft, LogOut, Award, 
+  Home, ThumbsUp, Bookmark, Users, ArrowLeft, LogOut, Award, 
   Star, Building2, MessageCircle, Calendar, FileText,
   Clock, Sparkles, ChevronRight, Search, Filter, X,
   Briefcase, Settings, HelpCircle, BookOpen, Globe, 
@@ -370,7 +370,7 @@ function StatCard({
   trend,
   color = "blue",
 }: { 
-  icon: typeof Heart; 
+  icon: typeof ThumbsUp; 
   label: string; 
   value: number; 
   subtext?: string;
@@ -758,8 +758,8 @@ export default function ClientDashboard() {
   const navItems = [
     { id: "overview", label: "Overview", icon: Home },
     { id: "projects", label: "My Projects", icon: Briefcase },
-    { id: "find", label: "Find Partners", icon: Heart, action: () => navigate("/client/swipe") },
-    { id: "liked", label: "Liked Partners", icon: Heart, count: likedPartners.length },
+    { id: "find", label: "Find Partners", icon: Search, action: () => navigate("/client/swipe") },
+    { id: "liked", label: "Liked Partners", icon: ThumbsUp, count: likedPartners.length },
     { id: "saved", label: "Saved Partners", icon: Bookmark, count: savedPartners.length },
     { id: "matches", label: "Matches", icon: Users, count: confirmedMatches.length },
     { id: "messages", label: "Messages", icon: MessageCircle },
@@ -862,7 +862,7 @@ export default function ClientDashboard() {
                   className="bg-gradient-to-r from-client-from to-client-to text-white"
                   data-testid="button-back-to-swiping"
                 >
-                  <Heart className="w-4 h-4 mr-2" />
+                  <Sparkles className="w-4 h-4 mr-2" />
                   Keep Swiping
                 </Button>
                 {(activeSection === "liked" || activeSection === "saved" || activeSection === "matches") && (
@@ -923,7 +923,7 @@ export default function ClientDashboard() {
               <div className="space-y-6">
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                   <StatCard icon={Briefcase} label="Projects" value={briefs.length} color="blue" />
-                  <StatCard icon={Heart} label="Liked" value={likedPartners.length} color="pink" />
+                  <StatCard icon={ThumbsUp} label="Liked" value={likedPartners.length} color="pink" />
                   <StatCard icon={Bookmark} label="Saved" value={savedPartners.length} color="orange" />
                   <StatCard icon={Users} label="Matches" value={confirmedMatches.length} color="green" />
                   <StatCard icon={Sparkles} label="Points" value={stats.totalPoints} color="purple" />
@@ -1098,7 +1098,7 @@ export default function ClientDashboard() {
 
                 {filteredLiked.length === 0 ? (
                   <Card className="p-12 text-center">
-                    <Heart className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <ThumbsUp className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">
                       {searchQuery || Object.values(filters).some(v => v) ? "No partners found" : "No liked partners yet"}
                     </h3>

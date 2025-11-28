@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Heart } from "lucide-react";
+import { Sparkles, X, Handshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { Partner } from "@shared/schema";
@@ -75,7 +75,7 @@ export default function MatchModal({ open, onClose, partner }: MatchModalProps) 
                     <span className="text-2xl font-bold text-white">You</span>
                   </div>
                   <div className="flex items-center">
-                    <Heart className="w-8 h-8 text-success-from fill-success-from" />
+                    <Handshake className="w-8 h-8 text-success-from" />
                   </div>
                   <div className="w-24 h-24 rounded-full bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center shadow-lg">
                     <span className="text-2xl font-bold text-white">

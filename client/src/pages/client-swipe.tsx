@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { 
-  X, Heart, ArrowLeft, Sparkles, Award, LogOut, ThumbsUp, MessageCircle,
+  X, ArrowLeft, Sparkles, Award, LogOut, ThumbsUp, MessageCircle,
   FolderPlus, Clock, DollarSign, CheckCircle2, AlertCircle, Loader2, Plus,
   Briefcase, ChevronDown, ChevronUp, ExternalLink, LayoutDashboard, 
   Users, BarChart3, Settings, Info, Star, MapPin, Calendar, Building2, Globe,
@@ -51,7 +51,7 @@ const CLIENT_GUIDE_STEPS = [
     id: "welcome",
     title: "Welcome to Client Matching!",
     message: "Swipe right to like a partner or left to skip. When you both like each other, you'll get a match!",
-    action: "Use the heart and X buttons below to get started",
+    action: "Use the thumbs up and X buttons below to get started",
   },
   {
     id: "profile_review",
@@ -514,7 +514,7 @@ export default function ClientSwipe() {
               data-testid="button-like"
               disabled={likeMutation.isPending}
             >
-              <Heart className="w-6 h-6 text-success-from" />
+              <ThumbsUp className="w-6 h-6 text-success-from" />
             </Button>
           </div>
         </div>
@@ -1105,7 +1105,7 @@ export default function ClientSwipe() {
                   className="bg-gradient-to-r from-success-from to-success-to text-white"
                   data-testid="button-like-from-profile"
                 >
-                  <Heart className="w-4 h-4 mr-2" />
+                  <ThumbsUp className="w-4 h-4 mr-2" />
                   Like This Partner
                 </Button>
               </DialogFooter>

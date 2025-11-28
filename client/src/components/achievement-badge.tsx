@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Trophy, Star, Zap, Heart } from "lucide-react";
+import { Trophy, Star, Zap, ThumbsUp } from "lucide-react";
 
 interface Achievement {
   id: string;
@@ -21,7 +21,7 @@ const iconMap = {
   trophy: Trophy,
   star: Star,
   zap: Zap,
-  heart: Heart,
+  thumbsUp: ThumbsUp,
 };
 
 export function AchievementBadge({ achievement, showPopup }: AchievementBadgeProps) {
