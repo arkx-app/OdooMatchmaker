@@ -29,13 +29,34 @@ interface ConversationPartner {
   unreadCount?: number;
 }
 
+interface AuthUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  profile: any;
+}
+
 export default function Messaging({ matchId }: { matchId?: string }) {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const userRole = localStorage.getItem("userRole");
   const [messageText, setMessageText] = useState("");
   const [selectedMatchId, setSelectedMatchId] = useState(matchId);
   const [, setLocation] = useLocation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Fetch current user from API
+  const { data: currentUser } = useQuery<AuthUser>({
+    queryKey: ["/api/auth/user"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/user", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch user");
+      return res.json();
+    },
+    retry: 1,
+  });
+
+  const userRole = currentUser?.role;
+  const profileId = currentUser?.profile?.id;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -43,26 +64,33 @@ export default function Messaging({ matchId }: { matchId?: string }) {
 
   // Fetch all matches for current user to build conversation list
   const { data: matches = [] } = useQuery<Match[]>({
-    queryKey: ["/api/matches", userRole, user.id],
+    queryKey: ["/api/matches", userRole, profileId],
     queryFn: async () => {
+      if (!profileId) return [];
       const endpoint = userRole === "partner" 
-        ? `/api/matches/partner/${user.partnerId || user.id}`
-        : `/api/matches/client/${user.clientId || user.id}`;
-      const res = await fetch(endpoint);
+        ? `/api/matches/partner/${profileId}`
+        : `/api/matches/client/${profileId}`;
+      const res = await fetch(endpoint, { credentials: "include" });
       return res.json();
     },
+    enabled: !!profileId,
   });
 
   // Fetch all partners for partner info
   const { data: partners = [] } = useQuery<Partner[]>({
     queryKey: ["/api/partners"],
+    queryFn: async () => {
+      const res = await fetch("/api/partners", { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
   });
 
   // Fetch all clients for client info
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
     queryFn: async () => {
-      const res = await fetch("/api/clients");
+      const res = await fetch("/api/clients", { credentials: "include" });
       if (!res.ok) return [];
       return res.json();
     },
@@ -101,7 +129,7 @@ export default function Messaging({ matchId }: { matchId?: string }) {
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages", selectedMatchId],
     queryFn: async () => {
-      const res = await fetch(`/api/messages/match/${selectedMatchId}`);
+      const res = await fetch(`/api/messages/match/${selectedMatchId}`, { credentials: "include" });
       return res.json();
     },
     enabled: !!selectedMatchId,
@@ -111,18 +139,16 @@ export default function Messaging({ matchId }: { matchId?: string }) {
   // Send message mutation
   const sendMutation = useMutation({
     mutationFn: async () => {
+      if (!currentUser?.id) return null;
       const otherUserId = userRole === "partner" 
         ? currentMatch?.clientId 
         : currentMatch?.partnerId;
       
-      return apiRequest("/api/messages", {
-        method: "POST",
-        body: JSON.stringify({
-          matchId: selectedMatchId,
-          fromUserId: user.id,
-          toUserId: otherUserId || "",
-          body: messageText,
-        }),
+      return apiRequest("POST", "/api/messages", {
+        matchId: selectedMatchId,
+        fromUserId: currentUser.id,
+        toUserId: otherUserId || "",
+        body: messageText,
       });
     },
     onSuccess: () => {
@@ -138,14 +164,15 @@ export default function Messaging({ matchId }: { matchId?: string }) {
 
   // Mark messages as read when viewing
   useEffect(() => {
-    if (selectedMatchId && user.id) {
+    if (selectedMatchId && currentUser?.id) {
       fetch(`/api/messages/match/${selectedMatchId}/read`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
+        credentials: "include",
+        body: JSON.stringify({ userId: currentUser.id }),
       }).catch(() => {});
     }
-  }, [selectedMatchId, user.id]);
+  }, [selectedMatchId, currentUser?.id]);
 
   const formatTime = (date: Date | string | null | undefined) => {
     if (!date) return "";
@@ -311,7 +338,7 @@ export default function Messaging({ matchId }: { matchId?: string }) {
                     </div>
                   ) : (
                     messages.map((msg) => {
-                      const isOwn = msg.fromUserId === user.id;
+                      const isOwn = msg.fromUserId === currentUser?.id;
                       return (
                         <div
                           key={msg.id}

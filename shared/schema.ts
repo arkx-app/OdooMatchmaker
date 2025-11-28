@@ -219,6 +219,9 @@ export const updateMatchSchema = z.object({
   meetingUrl: z.string().optional(),
   partnerAccepted: z.boolean().optional(),
   partnerResponded: z.boolean().optional(),
+  expectedClosingDate: z.coerce.date().optional().nullable(),
+  partnerNotes: z.string().optional().nullable(),
+  expectedRevenue: z.coerce.number().optional().nullable(),
 });
 
 export const insertMessageSchema = createInsertSchema(messages).omit({

@@ -17,7 +17,7 @@ import ClientPricing from "@/pages/client-pricing";
 import Auth from "@/pages/auth";
 import ClientBrief from "@/pages/client-brief";
 import ClientDashboard from "@/pages/client-dashboard";
-import PartnerDashboard from "@/pages/partner-dashboard-gamified";
+import PartnerDashboard from "@/pages/partner-dashboard";
 import Messaging from "@/pages/messaging";
 import PartnerAnalytics from "@/pages/partner-analytics";
 
