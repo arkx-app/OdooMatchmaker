@@ -146,7 +146,7 @@ export default function AuthPage() {
                 Don't have an account?{" "}
                 <button
                   type="button"
-                  onClick={() => setLocation("/get-started")}
+                  onClick={() => setLocation("/get-started?signup=true")}
                   className="text-primary hover:underline font-medium"
                   data-testid="link-sign-up"
                 >
