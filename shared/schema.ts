@@ -100,6 +100,10 @@ export const matches = pgTable("matches", {
   partnerResponded: boolean("partner_responded").default(false),
   partnerAccepted: boolean("partner_accepted"),
   meetingUrl: text("meeting_url"), // For booking intro calls
+  // Partner-specific tracking fields
+  expectedClosingDate: timestamp("expected_closing_date"),
+  partnerNotes: text("partner_notes"),
+  expectedRevenue: integer("expected_revenue"),
   createdAt: timestamp("created_at").defaultNow(),
   respondedAt: timestamp("responded_at"),
 });
