@@ -39,12 +39,18 @@ export default function AuthPage() {
       });
       
       // Role is permanently stored in database - redirect directly based on role
+      console.log(`[AUTH] Login successful for: ${result.email}`);
+      console.log(`[AUTH] Role received from server: "${result.role}"`);
+      
       if (result.role === "partner") {
+        console.log(`[AUTH] Redirecting to: /partner/dashboard`);
         setLocation("/partner/dashboard");
       } else if (result.role === "client") {
+        console.log(`[AUTH] Redirecting to: /client/dashboard`);
         setLocation("/client/dashboard");
       } else {
         // Only redirect to get-started if no role is set (incomplete registration)
+        console.log(`[AUTH] No role set, redirecting to: /get-started`);
         setLocation("/get-started");
       }
     } catch (error: any) {

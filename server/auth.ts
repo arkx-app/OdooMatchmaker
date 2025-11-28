@@ -116,21 +116,32 @@ export function setupAuth(app: Express) {
       // Find user
       const user = await storage.getUserByEmail(email);
       if (!user || !user.passwordHash) {
+        console.log(`[LOGIN] User not found or no password: ${email}`);
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
       // Verify password
       const isValidPassword = await bcrypt.compare(password, user.passwordHash);
       if (!isValidPassword) {
+        console.log(`[LOGIN] Invalid password for: ${email}`);
         return res.status(401).json({ message: "Invalid email or password" });
       }
+
+      // Log the role being read from database
+      console.log(`[LOGIN] User authenticated: ${email}`);
+      console.log(`[LOGIN] Role from database: "${user.role}"`);
+      console.log(`[LOGIN] Expected redirect: ${user.role === "partner" ? "/partner/dashboard" : user.role === "client" ? "/client/dashboard" : "/get-started"}`);
 
       // Get profile if exists (do this before session regeneration)
       let profile = null;
       if (user.role === "partner") {
         profile = await storage.getPartnerByUserId(user.id);
+        console.log(`[LOGIN] Loaded partner profile: ${profile?.id || "none"}`);
       } else if (user.role === "client") {
         profile = await storage.getClientByUserId(user.id);
+        console.log(`[LOGIN] Loaded client profile: ${profile?.id || "none"}`);
+      } else {
+        console.log(`[LOGIN] No role set, user needs to complete signup`);
       }
 
       // Regenerate session to prevent session fixation
@@ -146,6 +157,8 @@ export function setupAuth(app: Express) {
             console.error("Session save error:", saveErr);
             return res.status(500).json({ message: "Login failed" });
           }
+          
+          console.log(`[LOGIN] Success - returning role: "${user.role}" for ${email}`);
           
           res.json({
             id: user.id,
