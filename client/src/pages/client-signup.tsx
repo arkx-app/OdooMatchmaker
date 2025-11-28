@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -27,13 +28,89 @@ const industries = [
   "Other",
 ];
 
-const budgetRanges = [
-  "< $10,000",
-  "$10,000 - $25,000",
-  "$25,000 - $50,000",
-  "$50,000 - $100,000",
-  "> $100,000",
+const BUDGET_STEPS = [
+  0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000,
+  1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000,
+  2200, 2400, 2600, 2800, 3000, 3200, 3400, 3600, 3800, 4000,
+  4200, 4400, 4600, 4800, 5000, 5500, 6000, 6500, 7000, 7500,
+  8000, 8500, 9000, 9500, 10000,
+  10500, 11000, 11500, 12000, 12500, 13000, 13500, 14000, 14500, 15000,
+  16000, 17000, 18000, 19000, 20000, 22000, 24000, 26000, 28000, 30000,
+  32000, 34000, 36000, 38000, 40000, 42000, 44000, 46000, 48000, 50000,
+  52500, 55000, 57500, 60000, 62500, 65000, 67500, 70000, 75000, 80000,
+  85000, 90000, 95000, 100000, 110000, 120000, 130000, 140000, 150000,
+  160000, 170000, 180000, 190000, 200000, 210000, 220000, 230000, 240000, 250000
 ];
+
+function BudgetSlider({ 
+  value, 
+  onChange, 
+  className = "" 
+}: { 
+  value: number; 
+  onChange: (value: number) => void;
+  className?: string;
+}) {
+  const sliderIndex = useMemo(() => {
+    let closest = 0;
+    let minDiff = Math.abs(BUDGET_STEPS[0] - value);
+    for (let i = 1; i < BUDGET_STEPS.length; i++) {
+      const diff = Math.abs(BUDGET_STEPS[i] - value);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = i;
+      }
+    }
+    return closest;
+  }, [value]);
+
+  const handleSliderChange = useCallback((values: number[]) => {
+    const index = values[0];
+    onChange(BUDGET_STEPS[index]);
+  }, [onChange]);
+
+  const formatBudget = (amount: number) => {
+    return new Intl.NumberFormat('de-DE', { 
+      style: 'currency', 
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
+  return (
+    <div className={`space-y-4 ${className}`}>
+      <div className="flex items-center justify-center">
+        <div className="text-3xl font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent">
+          {formatBudget(value)}
+        </div>
+      </div>
+      <Slider
+        value={[sliderIndex]}
+        onValueChange={handleSliderChange}
+        max={BUDGET_STEPS.length - 1}
+        step={1}
+        className="w-full"
+        data-testid="slider-budget"
+      />
+      <div className="flex justify-between text-xs text-muted-foreground">
+        <span>{formatBudget(0)}</span>
+        <span>{formatBudget(50000)}</span>
+        <span>{formatBudget(150000)}</span>
+        <span>{formatBudget(250000)}</span>
+      </div>
+    </div>
+  );
+}
+
+const formatBudgetString = (amount: number) => {
+  return new Intl.NumberFormat('de-DE', { 
+    style: 'currency', 
+    currency: 'EUR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount);
+};
 
 const projectTimelines = [
   "Urgent (1-3 months)",
@@ -83,7 +160,7 @@ const clientSignupSchema = z.object({
   company: z.string().min(1, "Company name is required"),
   website: z.string().optional(),
   industry: z.string().min(1, "Industry is required"),
-  budget: z.string().min(1, "Budget is required"),
+  budget: z.number().min(0, "Budget is required"),
   projectTimeline: z.string().optional(),
   odooModules: z.array(z.string()).min(1, "Please select at least one module"),
   odooExperience: z.string().min(1, "Please select your experience level"),
@@ -113,7 +190,7 @@ export default function ClientSignup() {
       company: "",
       website: "",
       industry: "Technology",
-      budget: "$50,000 - $100,000",
+      budget: 50000,
       projectTimeline: "Soon (3-6 months)",
       odooModules: [],
       odooExperience: "",
@@ -145,7 +222,7 @@ export default function ClientSignup() {
         company: data.company,
         website: data.website || null,
         industry: data.industry,
-        budget: data.budget,
+        budget: formatBudgetString(data.budget),
         projectTimeline: data.projectTimeline || null,
         odooModules: data.odooModules,
         odooExperience: data.odooExperience,
@@ -406,21 +483,13 @@ export default function ClientSignup() {
                     name="budget"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Project Budget</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-budget">
-                              <SelectValue placeholder="Select your budget range" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {budgetRanges.map((range) => (
-                              <SelectItem key={range} value={range}>
-                                {range}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormLabel className="mb-3 block">Project Budget</FormLabel>
+                        <FormControl>
+                          <BudgetSlider
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

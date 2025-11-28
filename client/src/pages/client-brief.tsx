@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,11 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { LogOut, ArrowLeft } from "lucide-react";
+import { LogOut, ArrowLeft, Euro } from "lucide-react";
 import { Link } from "wouter";
 
 const modules = ["Accounting", "CRM", "Sales", "Inventory", "HR", "Manufacturing", "Website"];
@@ -25,13 +26,88 @@ const industries = [
   "Other",
 ];
 
-const budgetRanges = [
-  "< $10,000",
-  "$10,000 - $25,000",
-  "$25,000 - $50,000",
-  "$50,000 - $100,000",
-  "> $100,000",
+const BUDGET_STEPS = [
+  0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000,
+  1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000,
+  2200, 2400, 2600, 2800, 3000, 3200, 3400, 3600, 3800, 4000,
+  4200, 4400, 4600, 4800, 5000, 5500, 6000, 6500, 7000, 7500,
+  8000, 8500, 9000, 9500, 10000,
+  10500, 11000, 11500, 12000, 12500, 13000, 13500, 14000, 14500, 15000,
+  16000, 17000, 18000, 19000, 20000, 22000, 24000, 26000, 28000, 30000,
+  32000, 34000, 36000, 38000, 40000, 42000, 44000, 46000, 48000, 50000,
+  52500, 55000, 57500, 60000, 62500, 65000, 67500, 70000, 75000, 80000,
+  85000, 90000, 95000, 100000, 110000, 120000, 130000, 140000, 150000,
+  160000, 170000, 180000, 190000, 200000, 210000, 220000, 230000, 240000, 250000
 ];
+
+function BudgetSlider({ 
+  value, 
+  onChange, 
+  className = "" 
+}: { 
+  value: number; 
+  onChange: (value: number) => void;
+  className?: string;
+}) {
+  const sliderIndex = useMemo(() => {
+    let closest = 0;
+    let minDiff = Math.abs(BUDGET_STEPS[0] - value);
+    for (let i = 1; i < BUDGET_STEPS.length; i++) {
+      const diff = Math.abs(BUDGET_STEPS[i] - value);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = i;
+      }
+    }
+    return closest;
+  }, [value]);
+
+  const handleSliderChange = useCallback((values: number[]) => {
+    const index = values[0];
+    onChange(BUDGET_STEPS[index]);
+  }, [onChange]);
+
+  const formatBudget = (amount: number) => {
+    if (amount >= 1000) {
+      return new Intl.NumberFormat('de-DE', { 
+        style: 'currency', 
+        currency: 'EUR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(amount);
+    }
+    return new Intl.NumberFormat('de-DE', { 
+      style: 'currency', 
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
+  return (
+    <div className={`space-y-4 ${className}`}>
+      <div className="flex items-center justify-center">
+        <div className="text-3xl font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent">
+          {formatBudget(value)}
+        </div>
+      </div>
+      <Slider
+        value={[sliderIndex]}
+        onValueChange={handleSliderChange}
+        max={BUDGET_STEPS.length - 1}
+        step={1}
+        className="w-full"
+        data-testid="slider-budget"
+      />
+      <div className="flex justify-between text-xs text-muted-foreground">
+        <span>{formatBudget(0)}</span>
+        <span>{formatBudget(50000)}</span>
+        <span>{formatBudget(150000)}</span>
+        <span>{formatBudget(250000)}</span>
+      </div>
+    </div>
+  );
+}
 
 interface BriefsResponse {
   briefs: any[];
@@ -48,7 +124,7 @@ export default function ClientBrief() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    budget: "",
+    budget: 50000,
     timelineWeeks: "",
     modules: [] as string[],
     painPoints: [] as string[],
@@ -57,8 +133,17 @@ export default function ClientBrief() {
   const [profileData, setProfileData] = useState({
     company: "",
     industry: "Technology",
-    budget: "$50,000 - $100,000",
+    budget: 50000,
   });
+
+  const formatBudgetString = (amount: number) => {
+    return new Intl.NumberFormat('de-DE', { 
+      style: 'currency', 
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
 
   const { data: briefsData, isLoading: briefsLoading } = useQuery<BriefsResponse>({
     queryKey: ["/api/my/briefs"],
@@ -80,7 +165,7 @@ export default function ClientBrief() {
         role: "client",
         company: data.company,
         industry: data.industry,
-        budget: data.budget,
+        budget: formatBudgetString(data.budget),
       });
       if (!response.ok) {
         const error = await response.json();
@@ -150,6 +235,7 @@ export default function ClientBrief() {
         body: JSON.stringify({
           clientId: briefsData.clientId,
           ...formData,
+          budget: formatBudgetString(formData.budget),
           timelineWeeks: parseInt(formData.timelineWeeks) || undefined,
         }),
       }).then((r) => r.json());
@@ -247,22 +333,11 @@ export default function ClientBrief() {
               </div>
 
               <div>
-                <label className="text-sm font-medium">Budget Range</label>
-                <Select
+                <label className="text-sm font-medium mb-3 block">Project Budget</label>
+                <BudgetSlider
                   value={profileData.budget}
-                  onValueChange={(value) => setProfileData({ ...profileData, budget: value })}
-                >
-                  <SelectTrigger data-testid="select-profile-budget">
-                    <SelectValue placeholder="Select budget" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {budgetRanges.map((budget) => (
-                      <SelectItem key={budget} value={budget}>
-                        {budget}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={(value) => setProfileData({ ...profileData, budget: value })}
+                />
               </div>
 
               <Button
@@ -339,15 +414,12 @@ export default function ClientBrief() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-6">
                 <div>
-                  <label className="text-sm font-medium">Budget</label>
-                  <Input
-                    placeholder="e.g., $50,000 - $100,000"
+                  <label className="text-sm font-medium mb-3 block">Project Budget</label>
+                  <BudgetSlider
                     value={formData.budget}
-                    onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                    required
-                    data-testid="input-budget"
+                    onChange={(value) => setFormData({ ...formData, budget: value })}
                   />
                 </div>
 
