@@ -380,8 +380,8 @@ export default function ClientSwipe() {
             </p>
           </div>
           
-          <div className="flex-1 flex items-center justify-center p-6 relative">
-            <div className="relative w-full max-w-sm h-[520px]">
+          <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+            <div className="relative w-full max-w-sm h-[420px]">
               <AnimatePresence>
                 {partners.slice(currentIndex, currentIndex + 3).map((partner, idx) => {
                   const isTop = idx === 0;
@@ -492,30 +492,30 @@ export default function ClientSwipe() {
                 })}
               </AnimatePresence>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="p-4 border-t bg-card flex justify-center gap-4">
-            <Button
-              size="icon"
-              variant="outline"
-              className="w-14 h-14 rounded-full shadow-lg border-2"
-              onClick={() => handleAction("skip")}
-              data-testid="button-skip"
-              disabled={likeMutation.isPending}
-            >
-              <X className="w-6 h-6 text-danger-from" />
-            </Button>
-            <Button
-              size="icon"
-              variant="outline"
-              className="w-14 h-14 rounded-full shadow-lg border-2"
-              onClick={() => handleAction("like")}
-              data-testid="button-like"
-              disabled={likeMutation.isPending}
-            >
-              <ThumbsUp className="w-6 h-6 text-success-from" />
-            </Button>
+            {/* Action Buttons - directly under the card */}
+            <div className="flex justify-center gap-6 mt-6">
+              <Button
+                size="icon"
+                variant="outline"
+                className="w-16 h-16 rounded-full shadow-lg border-2 bg-background"
+                onClick={() => handleAction("skip")}
+                data-testid="button-skip"
+                disabled={likeMutation.isPending}
+              >
+                <X className="w-7 h-7 text-danger-from" />
+              </Button>
+              <Button
+                size="icon"
+                variant="outline"
+                className="w-16 h-16 rounded-full shadow-lg border-2 bg-background"
+                onClick={() => handleAction("like")}
+                data-testid="button-like"
+                disabled={likeMutation.isPending}
+              >
+                <ThumbsUp className="w-7 h-7 text-success-from" />
+              </Button>
+            </div>
           </div>
         </div>
 
