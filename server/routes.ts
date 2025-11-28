@@ -240,6 +240,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/clients", isAuthenticated, async (_req, res) => {
+    try {
+      const clients = await storage.getAllClients();
+      res.json(clients);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch clients" });
+    }
+  });
+
   app.get("/api/clients/:id", async (req, res) => {
     try {
       const client = await storage.getClient(req.params.id);
