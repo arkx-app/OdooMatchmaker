@@ -335,19 +335,18 @@ export default function ClientSwipe() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b bg-card sticky top-0 z-50 backdrop-blur-lg">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-2">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
+      <header className="border-b bg-card shrink-0">
+        <div className="px-4 py-2 flex items-center justify-between gap-2">
           <Link href="/">
             <Button variant="ghost" size="icon" data-testid="button-back">
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
           <div className="text-center flex-1">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent">
-              Client Dashboard
+            <h1 className="text-lg font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent">
+              Partner Discovery
             </h1>
-            <p className="text-xs text-muted-foreground">Swipes: {stats.totalSwipes} | Points: {stats.totalPoints}</p>
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -370,18 +369,18 @@ export default function ClientSwipe() {
         </div>
       </header>
 
-      <div className="flex-1 flex">
+      <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Swipe Cards */}
-        <div className="w-1/2 lg:w-3/5 border-r bg-muted/20 flex flex-col">
-          <div className="p-4 border-b bg-card">
-            <h2 className="text-lg font-semibold">Find Partners</h2>
-            <p className="text-sm text-muted-foreground">
-              {currentIndex + 1} / {partners.length} partners
-            </p>
+        <div className="w-[55%] border-r bg-muted/10 flex flex-col">
+          <div className="px-4 py-2 border-b bg-card flex items-center justify-between gap-2">
+            <h2 className="font-semibold">Find Partners</h2>
+            <span className="text-xs text-muted-foreground">
+              {currentIndex + 1} / {partners.length}
+            </span>
           </div>
           
-          <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
-            <div className="relative w-full max-w-sm h-[420px]">
+          <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
+            <div className="relative w-full max-w-xs h-[380px]">
               <AnimatePresence>
                 {partners.slice(currentIndex, currentIndex + 3).map((partner, idx) => {
                   const isTop = idx === 0;
@@ -412,67 +411,60 @@ export default function ClientSwipe() {
                       dragConstraints={{ left: 0, right: 0 }}
                       onDragEnd={isTop ? handleDragEnd : undefined}
                     >
-                      <Card className="h-full overflow-hidden rounded-2xl shadow-xl border" data-testid={`card-partner-${partner.id}`}>
+                      <Card className="h-full overflow-hidden rounded-xl shadow-lg border" data-testid={`card-partner-${partner.id}`}>
                         <div className="h-full flex flex-col">
-                          <div className="h-32 bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center">
-                            <div className="w-20 h-20 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                              <span className="text-3xl font-bold text-partner-via">
+                          <div className="h-24 bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center">
+                            <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                              <span className="text-2xl font-bold text-partner-via">
                                 {partner.company.charAt(0)}
                               </span>
                             </div>
                           </div>
 
-                          <div className="flex-1 p-4 space-y-3 overflow-y-auto">
-                            <div className="space-y-1">
-                              <h2 className="text-xl font-bold" data-testid={`text-company-${partner.id}`}>
+                          <div className="flex-1 p-3 space-y-2 overflow-y-auto">
+                            <div className="space-y-0.5">
+                              <h2 className="text-lg font-bold leading-tight" data-testid={`text-company-${partner.id}`}>
                                 {partner.company}
                               </h2>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <div className="flex gap-0.5">
                                   {Array.from({ length: 5 }).map((_, i) => (
-                                    <span key={i} className={`text-sm ${i < (partner.rating || 3) ? "text-yellow-500" : "text-muted"}`}>
+                                    <span key={i} className={`text-xs ${i < (partner.rating || 3) ? "text-yellow-500" : "text-muted"}`}>
                                       ★
                                     </span>
                                   ))}
                                 </div>
                                 <span className="text-xs text-muted-foreground">
-                                  ({partner.reviewCount} reviews)
+                                  ({partner.reviewCount})
                                 </span>
+                                <Badge variant="secondary" className="text-xs ml-auto">
+                                  {partner.industry}
+                                </Badge>
                               </div>
                             </div>
 
                             <div className="space-y-2">
-                              <Badge variant="secondary" className="text-xs">
-                                {partner.industry}
-                              </Badge>
-                              
-                              <div className="space-y-1">
-                                <h3 className="font-semibold text-xs text-muted-foreground">Services</h3>
-                                <div className="flex flex-wrap gap-1">
-                                  {partner.services.slice(0, 4).map((service, i) => (
-                                    <Badge key={i} variant="outline" className="rounded-full text-xs">
-                                      {service}
-                                    </Badge>
-                                  ))}
-                                  {partner.services.length > 4 && (
-                                    <Badge variant="outline" className="rounded-full text-xs">
-                                      +{partner.services.length - 4}
-                                    </Badge>
-                                  )}
-                                </div>
+                              <div className="flex flex-wrap gap-1">
+                                {partner.services.slice(0, 3).map((service, i) => (
+                                  <Badge key={i} variant="outline" className="rounded-full text-xs">
+                                    {service}
+                                  </Badge>
+                                ))}
+                                {partner.services.length > 3 && (
+                                  <Badge variant="outline" className="rounded-full text-xs">
+                                    +{partner.services.length - 3}
+                                  </Badge>
+                                )}
                               </div>
 
                               {partner.description && (
-                                <div className="space-y-1">
-                                  <h3 className="font-semibold text-xs text-muted-foreground">About</h3>
-                                  <p className="text-xs leading-relaxed line-clamp-3">{partner.description}</p>
-                                </div>
+                                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{partner.description}</p>
                               )}
 
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="w-full mt-2"
+                                className="w-full"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedPartner(partner);
@@ -494,35 +486,35 @@ export default function ClientSwipe() {
             </div>
 
             {/* Action Buttons - directly under the card */}
-            <div className="flex justify-center gap-6 mt-6">
+            <div className="flex justify-center gap-4 mt-4">
               <Button
                 size="icon"
                 variant="outline"
-                className="w-16 h-16 rounded-full shadow-lg border-2 bg-background"
+                className="w-14 h-14 rounded-full shadow-md border-2 bg-background"
                 onClick={() => handleAction("skip")}
                 data-testid="button-skip"
                 disabled={likeMutation.isPending}
               >
-                <X className="w-7 h-7 text-danger-from" />
+                <X className="w-6 h-6 text-danger-from" />
               </Button>
               <Button
                 size="icon"
                 variant="outline"
-                className="w-16 h-16 rounded-full shadow-lg border-2 bg-background"
+                className="w-14 h-14 rounded-full shadow-md border-2 bg-background"
                 onClick={() => handleAction("like")}
                 data-testid="button-like"
                 disabled={likeMutation.isPending}
               >
-                <ThumbsUp className="w-7 h-7 text-success-from" />
+                <ThumbsUp className="w-6 h-6 text-success-from" />
               </Button>
             </div>
           </div>
         </div>
 
         {/* Right Panel - Tabbed Likes & Projects */}
-        <div className="w-1/2 lg:w-2/5 flex flex-col">
+        <div className="w-[45%] flex flex-col bg-card">
           <Tabs defaultValue="likes" className="flex flex-col h-full">
-            <div className="p-3 border-b bg-card">
+            <div className="px-3 py-2 border-b">
               <TabsList className="w-full grid grid-cols-2">
                 <TabsTrigger value="likes" className="gap-2" data-testid="tab-likes">
                   <ThumbsUp className="w-4 h-4" />
@@ -547,7 +539,7 @@ export default function ClientSwipe() {
 
             <ScrollArea className="flex-1">
               {/* Likes Tab Content */}
-              <TabsContent value="likes" className="m-0 p-4 space-y-3">
+              <TabsContent value="likes" className="m-0 p-3 space-y-2">
                 {/* Sample demo likes - always show these for freemium demo */}
                 {(() => {
                   const sampleLikes = [
