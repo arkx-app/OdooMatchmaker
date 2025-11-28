@@ -782,7 +782,7 @@ export default function PartnerDashboard() {
                 <Button variant="ghost" className="w-full justify-start gap-2 h-auto p-2">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm">
-                      {partnerProfile.name?.charAt(0) || user.firstName?.charAt(0) || "P"}
+                      {partnerProfile?.name?.charAt(0) || currentUser?.firstName?.charAt(0) || "P"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 text-left min-w-0">

@@ -38,11 +38,13 @@ export default function AuthPage() {
         description: "You've successfully logged in.",
       });
       
-      if (result.role === "partner" && result.profile) {
+      // Role is permanently stored in database - redirect directly based on role
+      if (result.role === "partner") {
         setLocation("/partner/dashboard");
-      } else if (result.role === "client" && result.profile) {
+      } else if (result.role === "client") {
         setLocation("/client/dashboard");
       } else {
+        // Only redirect to get-started if no role is set (incomplete registration)
         setLocation("/get-started");
       }
     } catch (error: any) {

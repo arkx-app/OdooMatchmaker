@@ -309,7 +309,7 @@ function ProjectCard({
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <h3 className="font-semibold">{brief.projectName || "Untitled Project"}</h3>
+              <h3 className="font-semibold">{brief.title || "Untitled Project"}</h3>
               <Badge className={`${statusColors[brief.status || "draft"]} text-white text-xs`}>
                 {brief.status || "Draft"}
               </Badge>
@@ -324,16 +324,16 @@ function ProjectCard({
                   {brief.budget}
                 </span>
               )}
-              {brief.timeline && (
+              {brief.timelineWeeks && (
                 <span className="flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5" />
-                  {brief.timeline}
+                  {brief.timelineWeeks} weeks
                 </span>
               )}
-              {brief.industry && (
+              {brief.priority && (
                 <span className="flex items-center gap-1">
                   <Building2 className="w-3.5 h-3.5" />
-                  {brief.industry}
+                  {brief.priority} priority
                 </span>
               )}
             </div>
