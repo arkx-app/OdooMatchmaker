@@ -5,7 +5,7 @@ import {
   FolderPlus, Clock, DollarSign, CheckCircle2, AlertCircle, Loader2, Plus,
   Briefcase, ChevronDown, ChevronUp, ExternalLink, LayoutDashboard, 
   Users, BarChart3, Settings, Info, Star, MapPin, Calendar, Building2, Globe,
-  Lock, Crown, Zap
+  Lock, Crown, Zap, User, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,15 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -334,38 +343,62 @@ export default function ClientSwipe() {
     );
   }
 
+  const userInitials = user?.firstName && user?.lastName 
+    ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase()
+    : user?.email?.charAt(0).toUpperCase() || "U";
+
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <header className="border-b bg-card shrink-0">
         <div className="px-4 py-2 flex items-center justify-between gap-2">
-          <Link href="/">
-            <Button variant="ghost" size="icon" data-testid="button-back">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
-          <div className="text-center flex-1">
+          <div className="flex items-center gap-2">
             <h1 className="text-lg font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent">
               Partner Discovery
             </h1>
           </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowAchievements(!showAchievements)}
-              data-testid="button-achievements"
-            >
-              <Award className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              data-testid="button-logout"
-            >
-              <LogOut className="w-5 h-5" />
-            </Button>
-          </div>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="gap-2 px-2" data-testid="button-user-menu">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-client-from/20 text-client-from text-sm">
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/client/swipe")} data-testid="menu-matching">
+                <Search className="w-4 h-4 mr-2" />
+                Find Partners
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/client/dashboard")} data-testid="menu-dashboard">
+                <LayoutDashboard className="w-4 h-4 mr-2" />
+                Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/client/briefs")} data-testid="menu-briefs">
+                <Briefcase className="w-4 h-4 mr-2" />
+                Create Brief
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowAchievements(!showAchievements)} data-testid="menu-achievements">
+                <Award className="w-4 h-4 mr-2" />
+                Achievements
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive" data-testid="menu-logout">
+                <LogOut className="w-4 h-4 mr-2" />
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 

@@ -63,6 +63,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useGamification } from "@/hooks/use-gamification";
 import { AchievementsList } from "@/components/achievement-badge";
@@ -830,20 +839,44 @@ export default function ClientDashboard() {
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
-          <SidebarFooter className="p-4 border-t">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
-                {user?.firstName?.charAt(0) || "U"}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{user?.firstName} {user?.lastName}</p>
-                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-              </div>
-            </div>
-            <Button variant="outline" size="sm" className="w-full" onClick={handleLogout} data-testid="button-logout">
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+          <SidebarFooter className="p-3 border-t">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="w-full justify-start gap-3 h-auto py-2 px-2" data-testid="button-user-menu">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-client-from/20 text-client-from text-sm">
+                      {user?.firstName?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="text-sm font-medium truncate">{user?.firstName} {user?.lastName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/client/swipe")} data-testid="menu-matching">
+                  <Search className="w-4 h-4 mr-2" />
+                  Find Partners
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/client/briefs")} data-testid="menu-briefs">
+                  <Briefcase className="w-4 h-4 mr-2" />
+                  Create Brief
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowAchievements(!showAchievements)} data-testid="menu-achievements">
+                  <Award className="w-4 h-4 mr-2" />
+                  Achievements
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive" data-testid="menu-logout">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarFooter>
         </Sidebar>
 
