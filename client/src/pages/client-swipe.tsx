@@ -626,6 +626,7 @@ export default function ClientSwipe() {
                           <Button 
                             className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white"
                             data-testid="button-upgrade-premium"
+                            onClick={() => navigate("/pricing")}
                           >
                             <Zap className="w-4 h-4 mr-2" />
                             Upgrade to Premium

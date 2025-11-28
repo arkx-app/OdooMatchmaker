@@ -1154,6 +1154,7 @@ export default function ClientDashboard() {
                             <Button 
                               className="bg-gradient-to-r from-amber-500 to-orange-500 text-white"
                               data-testid="button-upgrade-premium-liked"
+                              onClick={() => navigate("/pricing")}
                             >
                               <Zap className="w-4 h-4 mr-2" />
                               Upgrade to Premium
