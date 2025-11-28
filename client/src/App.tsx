@@ -21,6 +21,7 @@ import PartnerDashboard from "@/pages/partner-dashboard";
 import Messaging from "@/pages/messaging";
 import PartnerAnalytics from "@/pages/partner-analytics";
 import BookDemo from "@/pages/book-demo";
+import Checkout from "@/pages/checkout";
 
 function Router() {
   return (
@@ -44,6 +45,7 @@ function Router() {
       <Route path="/pricing" component={Pricing} />
       <Route path="/client/pricing" component={ClientPricing} />
       <Route path="/book-demo" component={BookDemo} />
+      <Route path="/checkout" component={Checkout} />
       <Route component={NotFound} />
     </Switch>
   );

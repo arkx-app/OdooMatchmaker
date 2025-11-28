@@ -289,18 +289,20 @@ export default function Pricing() {
                     ))}
                   </ul>
 
-                  <Button
-                    className={`w-full ${
-                      plan.featured
-                        ? "bg-gradient-to-r from-partner-from via-partner-from to-partner-to"
-                        : ""
-                    }`}
-                    variant={plan.featured ? "default" : "outline"}
-                    size="lg"
-                    data-testid={`button-select-${plan.name.toLowerCase()}`}
-                  >
-                    Get Started
-                  </Button>
+                  <Link href={`/checkout?plan=${plan.name.toLowerCase()}&billing=${isYearly ? "yearly" : "monthly"}`}>
+                    <Button
+                      className={`w-full ${
+                        plan.featured
+                          ? "bg-gradient-to-r from-partner-from via-partner-from to-partner-to"
+                          : ""
+                      }`}
+                      variant={plan.featured ? "default" : "outline"}
+                      size="lg"
+                      data-testid={`button-select-${plan.name.toLowerCase()}`}
+                    >
+                      Get Started
+                    </Button>
+                  </Link>
                 </Card>
               ))}
             </div>
