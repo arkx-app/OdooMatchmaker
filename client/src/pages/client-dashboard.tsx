@@ -555,10 +555,14 @@ export default function ClientDashboard() {
   const clientId = user?.profile?.id || "";
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate("/client/signup");
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        navigate("/auth");
+      } else if (user?.role === "partner") {
+        navigate("/partner/dashboard");
+      }
     }
-  }, [authLoading, isAuthenticated, navigate]);
+  }, [authLoading, isAuthenticated, user?.role, navigate]);
 
   const handleLogout = async () => {
     await logout();

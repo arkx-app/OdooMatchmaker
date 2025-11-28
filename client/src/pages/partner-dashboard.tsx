@@ -450,6 +450,17 @@ export default function PartnerDashboard() {
   const partnerProfile = currentUser?.profile as Partner | undefined;
   const partnerId = partnerProfile?.id;
 
+  // Role-based protection: redirect non-partners to appropriate dashboard
+  useEffect(() => {
+    if (!userLoading) {
+      if (!currentUser) {
+        navigate("/auth");
+      } else if (currentUser.role === "client") {
+        navigate("/client/dashboard");
+      }
+    }
+  }, [userLoading, currentUser, navigate]);
+
   useEffect(() => {
     if (partnerProfile?.id) {
       setProfileForm({
