@@ -41,7 +41,7 @@ export default function AuthPage() {
       if (result.role === "partner" && result.profile) {
         setLocation("/partner/dashboard");
       } else if (result.role === "client" && result.profile) {
-        setLocation("/client/dashboard");
+        setLocation("/client/swipe");
       } else {
         setLocation("/get-started");
       }
