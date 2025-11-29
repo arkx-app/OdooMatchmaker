@@ -142,6 +142,7 @@ export interface IStorage {
   createTicketComment(comment: InsertTicketComment): Promise<TicketComment>;
   getTicketComments(ticketId: string): Promise<TicketComment[]>;
   getPublicTicketComments(ticketId: string): Promise<TicketComment[]>;
+  getTicketsWithNewReplies(userId: string): Promise<{ ticketId: string; hasNewReply: boolean }[]>;
   
   // Admin Users (for assignment)
   getAdminUsers(): Promise<User[]>;
@@ -573,6 +574,19 @@ export class DatabaseStorage implements IStorage {
         eq(ticketComments.ticketId, ticketId),
         eq(ticketComments.isInternal, false)
       ));
+  }
+
+  async getTicketsWithNewReplies(userId: string): Promise<{ ticketId: string; hasNewReply: boolean }[]> {
+    const userTickets = await this.getSupportTicketsByUser(userId);
+    const result: { ticketId: string; hasNewReply: boolean }[] = [];
+    
+    for (const ticket of userTickets) {
+      const comments = await this.getPublicTicketComments(ticket.id);
+      const hasAdminReply = comments.some(c => c.userRole === 'admin' && c.userId !== userId);
+      result.push({ ticketId: ticket.id, hasNewReply: hasAdminReply });
+    }
+    
+    return result;
   }
 
   async getAdminUsers(): Promise<User[]> {

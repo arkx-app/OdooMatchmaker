@@ -878,6 +878,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get notification count for tickets with admin replies
+  app.get("/api/tickets/notifications", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const ticketsWithReplies = await storage.getTicketsWithNewReplies(userId);
+      const ticketsWithNewReplies = ticketsWithReplies.filter(t => t.hasNewReply);
+      
+      res.json({
+        count: ticketsWithNewReplies.length,
+        ticketIds: ticketsWithNewReplies.map(t => t.ticketId),
+      });
+    } catch (error) {
+      console.error("Error fetching ticket notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
   // Get a specific ticket (owner or admin)
   app.get("/api/tickets/:id", isAuthenticated, async (req, res) => {
     try {

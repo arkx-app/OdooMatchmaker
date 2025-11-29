@@ -1,0 +1,117 @@
+Replit Prompt (Unified Helpdesk + Dashboard + Matching + Messaging)
+
+Build a complete dashboard system with three user types: Client, Partner, and Admin. Include helpdesk, navigation, swiping, matching, and messaging features.
+
+1. Dashboards
+
+Three separate dashboards:
+
+Client Dashboard
+
+Partner Dashboard
+
+Admin Dashboard
+
+Each dashboard should have clear navigation and consistent UX elements.
+
+2. Helpdesk System
+
+Customers and partners can create helpdesk tickets from their dashboards.
+
+Each ticket is saved in the creator’s dashboard and simultaneously in the Admin dashboard.
+
+Admin helpdesk pipeline stages:
+
+Incoming
+
+Assigned
+
+Admin can:
+
+Open tickets
+
+View issues
+
+Change ticket stages
+
+Reply to tickets
+
+Replies from Admin:
+
+Immediately appear in the customer/partner ticket thread
+
+Trigger a notification to the ticket creator
+
+Customer and Partner dashboards do not interact with each other for helpdesk; both only connect to Admin.
+
+3. Navigation
+
+Partner Dashboard:
+
+Every sub-page must have a back arrow at top-left to return to the main dashboard.
+
+Arrow must be consistent in icon, placement, and behavior across all partner sub-pages.
+
+Same principle can be applied to client dashboards where needed.
+
+4. Central Swiping Mechanism (Client + Partner)
+
+Primary feature: Swiping is the first element users see when opening the client or partner dashboard.
+
+Users can:
+
+Swipe through profiles (partners for clients, clients for partners)
+
+Click on a profile to view extra details
+
+Like or dislike profiles
+
+Matching logic:
+
+When both users like each other, it becomes a match.
+
+Matches appear under a dedicated “Matches” tab in both the client and partner dashboards.
+
+Users can scroll through matches and see full details on each match.
+
+5. Messaging System (Client + Partner)
+
+Each dashboard has a Messaging tab:
+
+Shows all matches’ conversations
+
+Allows reopening old messages and starting new chats
+
+Future-proof for adding video call and voice call functionality
+
+Messaging flow:
+
+Once a match occurs, users can immediately start messaging each other
+
+Conversations are saved and accessible from the messaging tab
+
+Notifications are triggered for new messages
+
+6. Dashboard Interconnections
+
+Customer ↔ Admin
+
+Partner ↔ Admin
+
+No direct Customer ↔ Partner connection except via the matching system (likes/matches).
+
+Messaging only occurs after a mutual match.
+
+7. Deliverables
+
+Backend structure to manage tickets, matches, messages, likes/dislikes
+
+UI components for all dashboards
+
+Centralized swiping mechanism
+
+Helpdesk pipeline with notifications
+
+Messaging system ready for future calls
+
+Navigation arrows consistent across partner (and client) dashboards

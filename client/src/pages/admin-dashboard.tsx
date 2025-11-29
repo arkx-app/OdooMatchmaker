@@ -793,9 +793,9 @@ export default function AdminDashboard() {
                     >
                       <Inbox className="w-4 h-4" />
                       <span>Support Tickets</span>
-                      {analytics?.openTickets ? (
+                      {analytics?.support?.openTickets ? (
                         <Badge variant="destructive" className="ml-auto">
-                          {analytics.openTickets}
+                          {analytics.support.openTickets}
                         </Badge>
                       ) : null}
                     </SidebarMenuButton>
