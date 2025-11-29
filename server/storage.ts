@@ -41,8 +41,11 @@ export interface IStorage {
   getMatchesByClient(clientId: string): Promise<Match[]>;
   getMatchesByPartner(partnerId: string): Promise<Match[]>;
   getMatchesByBrief(briefId: string): Promise<Match[]>;
+  getClientsWhoLikedPartner(partnerId: string): Promise<{ client: Client; match: Match }[]>;
+  getPartnersNotSwipedByPartner(partnerId: string): Promise<Client[]>;
   createMatch(match: InsertMatch): Promise<Match>;
   updateMatch(id: string, updates: Partial<Match>): Promise<Match | undefined>;
+  findMatchByClientAndPartner(clientId: string, partnerId: string): Promise<Match | undefined>;
 
   createMessage(message: InsertMessage): Promise<Message>;
   getMessagesByMatch(matchId: string): Promise<Message[]>;
@@ -248,6 +251,52 @@ export class DatabaseStorage implements IStorage {
 
   async getMatchesByBrief(briefId: string): Promise<Match[]> {
     return await db.select().from(matches).where(eq(matches.briefId, briefId));
+  }
+
+  async getClientsWhoLikedPartner(partnerId: string): Promise<{ client: Client; match: Match }[]> {
+    const partnerMatches = await db
+      .select()
+      .from(matches)
+      .where(eq(matches.partnerId, partnerId));
+    
+    const likedMatches = partnerMatches.filter(m => m.clientLiked === true);
+    
+    const results: { client: Client; match: Match }[] = [];
+    for (const match of likedMatches) {
+      const client = await this.getClient(match.clientId);
+      if (client) {
+        results.push({ client, match });
+      }
+    }
+    return results;
+  }
+
+  async getPartnersNotSwipedByPartner(partnerId: string): Promise<Client[]> {
+    const partnerMatches = await db
+      .select()
+      .from(matches)
+      .where(eq(matches.partnerId, partnerId));
+    
+    const notRespondedMatches = partnerMatches.filter(
+      m => m.clientLiked === true && m.partnerResponded !== true
+    );
+    
+    const clientList: Client[] = [];
+    for (const match of notRespondedMatches) {
+      const client = await this.getClient(match.clientId);
+      if (client) {
+        clientList.push(client);
+      }
+    }
+    return clientList;
+  }
+
+  async findMatchByClientAndPartner(clientId: string, partnerId: string): Promise<Match | undefined> {
+    const result = await db
+      .select()
+      .from(matches)
+      .where(eq(matches.clientId, clientId));
+    return result.find(m => m.partnerId === partnerId);
   }
 
   async createMatch(insertMatch: InsertMatch): Promise<Match> {

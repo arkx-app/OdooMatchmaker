@@ -511,6 +511,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get clients who liked this partner (for partner swiping)
+  app.get("/api/clients/swipe/:partnerId", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const partnerProfile = await storage.getPartnerByUserId(userId);
+      if (!partnerProfile || partnerProfile.id !== req.params.partnerId) {
+        return res.status(403).json({ message: "Not authorized to view these clients" });
+      }
+
+      const clientsData = await storage.getClientsWhoLikedPartner(req.params.partnerId);
+      
+      // Filter to only show clients that partner hasn't responded to yet
+      const unrespondedClients = clientsData.filter(({ match }) => !match.partnerResponded);
+      
+      // Return clients with their match and brief info
+      const enrichedClients = await Promise.all(
+        unrespondedClients.map(async ({ client, match }) => {
+          const brief = match.briefId ? await storage.getBrief(match.briefId) : null;
+          return {
+            client,
+            match,
+            brief,
+          };
+        })
+      );
+
+      res.json(enrichedClients);
+    } catch (error) {
+      console.error("Error fetching swipe clients:", error);
+      res.status(500).json({ message: "Failed to fetch clients" });
+    }
+  });
+
+  // Partner swipe action - record partner's decision on a client
+  app.post("/api/matches/partner-swipe", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const { matchId, accepted } = req.body;
+      
+      if (!matchId || typeof accepted !== 'boolean') {
+        return res.status(400).json({ message: "matchId and accepted (boolean) are required" });
+      }
+
+      // Verify the match exists and belongs to this partner
+      const existingMatch = await storage.getMatchById(matchId);
+      if (!existingMatch) {
+        return res.status(404).json({ message: "Match not found" });
+      }
+
+      const partnerProfile = await storage.getPartnerByUserId(userId);
+      if (!partnerProfile || existingMatch.partnerId !== partnerProfile.id) {
+        return res.status(403).json({ message: "Not authorized to update this match" });
+      }
+
+      // Update the match with partner's response
+      const updateData: any = {
+        partnerResponded: true,
+        partnerAccepted: accepted,
+        respondedAt: new Date(),
+      };
+
+      // If both client liked AND partner accepted, it's a mutual match
+      if (existingMatch.clientLiked && accepted) {
+        updateData.status = "accepted";
+      } else if (!accepted) {
+        updateData.status = "rejected";
+      }
+
+      const updatedMatch = await storage.updateMatch(matchId, updateData);
+
+      // Check if it's a mutual match (both parties liked each other)
+      const isMutualMatch = existingMatch.clientLiked && accepted;
+
+      res.json({
+        match: updatedMatch,
+        matched: isMutualMatch,
+        clientId: existingMatch.clientId,
+      });
+    } catch (error) {
+      console.error("Error processing partner swipe:", error);
+      res.status(500).json({ message: "Failed to process swipe" });
+    }
+  });
+
+  // Get mutual matches for a partner (where both parties liked each other)
+  app.get("/api/matches/mutual/partner/:partnerId", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const partnerProfile = await storage.getPartnerByUserId(userId);
+      if (!partnerProfile || partnerProfile.id !== req.params.partnerId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const allMatches = await storage.getMatchesByPartner(req.params.partnerId);
+      const mutualMatches = allMatches.filter(
+        m => m.clientLiked === true && m.partnerAccepted === true
+      );
+
+      const enriched = await Promise.all(
+        mutualMatches.map(async (m) => ({
+          ...m,
+          brief: await storage.getBrief(m.briefId),
+          client: await storage.getClient(m.clientId),
+        }))
+      );
+
+      res.json(enriched);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch mutual matches" });
+    }
+  });
+
+  // Get mutual matches for a client (where both parties liked each other)
+  app.get("/api/matches/mutual/client/:clientId", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const clientProfile = await storage.getClientByUserId(userId);
+      if (!clientProfile || clientProfile.id !== req.params.clientId) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const allMatches = await storage.getMatchesByClient(req.params.clientId);
+      const mutualMatches = allMatches.filter(
+        m => m.clientLiked === true && m.partnerAccepted === true
+      );
+
+      const enriched = await Promise.all(
+        mutualMatches.map(async (m) => ({
+          ...m,
+          partner: await storage.getPartner(m.partnerId),
+        }))
+      );
+
+      res.json(enriched);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch mutual matches" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   seedPartners().catch(err => console.error("Failed to seed partners:", err));

@@ -18,6 +18,7 @@ import Auth from "@/pages/auth";
 import ClientBrief from "@/pages/client-brief";
 import ClientDashboard from "@/pages/client-dashboard";
 import PartnerDashboard from "@/pages/partner-dashboard";
+import PartnerSwipe from "@/pages/partner-swipe";
 import Messaging from "@/pages/messaging";
 import PartnerAnalytics from "@/pages/partner-analytics";
 import BookDemo from "@/pages/book-demo";
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/partner/signup" component={PartnerSignup} />
       <Route path="/partner-signup" component={PartnerSignup} />
       <Route path="/partner/dashboard" component={PartnerDashboard} />
+      <Route path="/partner/swipe" component={PartnerSwipe} />
       <Route path="/partner/analytics" component={PartnerAnalytics} />
       <Route path="/messages/:id" component={({ id }: any) => <Messaging matchId={id} />} />
       <Route path="/pricing" component={Pricing} />

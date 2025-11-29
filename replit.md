@@ -34,10 +34,12 @@ The application implements a dual-identity design system with distinct visual tr
 - **Split Page (`/`):** Two-sided choice between client and partner roles
 - **Auth Pages:** Login, signup with role-based registration
 - **Client Brief Form (`/client/briefs`):** Create detailed project briefs with module selection
+- **Client Swipe (`/client/swipe`):** Tinder-style matching interface for clients to swipe through partners
+- **Partner Swipe (`/partner/swipe`):** Tinder-style matching interface for partners to review interested clients
+- **Client Dashboard (`/client/dashboard`):** View liked partners, matches, and project briefs
 - **Partner Dashboard (`/partner/dashboard`):** View incoming client briefs, accept/decline matches
 - **Messaging (`/messages/:id`):** Real-time DM system between matched clients and partners
 - **Partner Analytics (`/partner/analytics`):** ROI dashboard with conversion metrics and project value tracking
-- **Client Swipe (`/client/swipe`):** Original Tinder-style matching interface
 
 **Key Frontend Patterns:**
 - Component-based architecture with reusable UI primitives
@@ -83,8 +85,12 @@ RESTful API endpoints organized by resource:
 **Matches & Pipeline:**
 - `GET /api/matches/partner/:partnerId` - Partner's incoming leads
 - `GET /api/matches/client/:clientId` - Client's swipes and matches
-- `POST /api/matches` - Create new match record
+- `POST /api/matches` - Create new match record (client swipes right on partner)
+- `POST /api/matches/partner-swipe` - Partner swipes on client (creates mutual match if both liked)
 - `PATCH /api/matches/:id` - Update match status (accepted/rejected/converted)
+
+**Partner Swipe Discovery:**
+- `GET /api/clients/swipe/:partnerId` - Get clients who liked this partner (for partner swiping)
 
 **Messaging:**
 - `POST /api/messages` - Send message between matched users

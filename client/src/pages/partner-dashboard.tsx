@@ -710,6 +710,7 @@ export default function PartnerDashboard() {
 
   const navItems = [
     { id: "overview", label: "Overview", icon: Home },
+    { id: "swipe", label: "Find Clients", icon: Search, badge: newLeads.length },
     { id: "leads", label: "New Leads", icon: Inbox, badge: newLeads.length },
     { id: "matches", label: "Active Matches", icon: Users, badge: mutualMatches.length },
     { id: "messages", label: "Messages", icon: MessageCircle },
@@ -786,6 +787,8 @@ export default function PartnerDashboard() {
                         onClick={() => {
                           if (item.id === "analytics") {
                             navigate("/partner/analytics");
+                          } else if (item.id === "swipe") {
+                            navigate("/partner/swipe");
                           } else if (item.id === "profile") {
                             setShowProfileDialog(true);
                           } else {

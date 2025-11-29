@@ -2,16 +2,28 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Handshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { Partner } from "@shared/schema";
+import type { Partner, Client } from "@shared/schema";
+import { useLocation } from "wouter";
 
 interface MatchModalProps {
   open: boolean;
   onClose: () => void;
-  partner: Partner | null;
+  partner?: Partner | null;
+  matchName?: string;
+  matchType?: "partner" | "client";
+  matchId?: string;
 }
 
-export default function MatchModal({ open, onClose, partner }: MatchModalProps) {
-  if (!partner) return null;
+export default function MatchModal({ open, onClose, partner, matchName, matchType = "partner", matchId }: MatchModalProps) {
+  const [, navigate] = useLocation();
+  const displayName = matchName || partner?.company || "Match";
+
+  const handleStartConversation = () => {
+    if (matchId) {
+      navigate(`/messages/${matchId}`);
+    }
+    onClose();
+  };
 
   return (
     <AnimatePresence>
@@ -66,28 +78,47 @@ export default function MatchModal({ open, onClose, partner }: MatchModalProps) 
                     It's a Match!
                   </h2>
                   <p className="text-muted-foreground">
-                    You and {partner.company} liked each other
+                    You and {displayName} liked each other
                   </p>
                 </div>
 
                 <div className="flex justify-center gap-4">
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-client-from to-client-to flex items-center justify-center shadow-lg">
-                    <span className="text-2xl font-bold text-white">You</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Handshake className="w-8 h-8 text-success-from" />
-                  </div>
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center shadow-lg">
-                    <span className="text-2xl font-bold text-white">
-                      {partner.company.charAt(0)}
-                    </span>
-                  </div>
+                  {matchType === "partner" ? (
+                    <>
+                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center shadow-lg">
+                        <span className="text-2xl font-bold text-white">You</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Handshake className="w-8 h-8 text-success-from" />
+                      </div>
+                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                        <span className="text-2xl font-bold text-white">
+                          {displayName.charAt(0)}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                        <span className="text-2xl font-bold text-white">You</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Handshake className="w-8 h-8 text-success-from" />
+                      </div>
+                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center shadow-lg">
+                        <span className="text-2xl font-bold text-white">
+                          {displayName.charAt(0)}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="pt-4 space-y-3">
                   <Button
                     className="w-full bg-gradient-to-r from-success-from to-success-to hover:opacity-90"
                     size="lg"
+                    onClick={handleStartConversation}
                     data-testid="button-start-conversation"
                   >
                     Start Conversation
