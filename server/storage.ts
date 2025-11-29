@@ -18,6 +18,68 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
+// Comprehensive Admin Analytics Types
+export interface AdminAnalytics {
+  // Core totals
+  totals: {
+    clients: number;
+    partners: number;
+    matches: number;
+    mutualMatches: number;
+    messages: number;
+    activeUsers: number;
+  };
+  // Conversion metrics
+  conversion: {
+    matchConversionRate: number;
+    responseRate: number;
+    clientResponseRate: number;
+    partnerResponseRate: number;
+  };
+  // Growth metrics
+  growth: {
+    newUsersThisWeek: number;
+    newUsersThisMonth: number;
+    newMatchesThisWeek: number;
+    newMatchesThisMonth: number;
+    userGrowthPercent: number;
+    matchGrowthPercent: number;
+  };
+  // Revenue insights from sales opportunities
+  revenue: {
+    totalPipelineValue: number;
+    closedDealsValue: number;
+    lostDealsValue: number;
+    averageDealSize: number;
+    dealsInProgress: number;
+  };
+  // Top performers
+  leaderboards: {
+    topPartnersByMatches: Array<{ id: string; name: string; company: string; matchCount: number }>;
+    topPartnersByConversion: Array<{ id: string; name: string; company: string; conversionRate: number; matchCount: number }>;
+  };
+  // Industry distribution
+  distribution: {
+    partnersByIndustry: Array<{ industry: string; count: number }>;
+    clientsByIndustry: Array<{ industry: string; count: number }>;
+  };
+  // Support health
+  support: {
+    openTickets: number;
+    ticketsByCategory: Array<{ category: string; count: number }>;
+    ticketsByPriority: Array<{ priority: string; count: number }>;
+    averageResolutionHours: number | null;
+    resolvedThisWeek: number;
+  };
+  // Recent activity
+  activity: {
+    recentMatches: Array<{ id: string; clientName: string; partnerName: string; createdAt: string }>;
+    recentSignups: Array<{ id: string; email: string; role: string; createdAt: string }>;
+  };
+  // Timestamp
+  lastUpdated: string;
+}
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -82,16 +144,8 @@ export interface IStorage {
   // Admin Users (for assignment)
   getAdminUsers(): Promise<User[]>;
 
-  // Admin Analytics
-  getAdminAnalytics(): Promise<{
-    totalClients: number;
-    totalPartners: number;
-    totalMatches: number;
-    mutualMatches: number;
-    totalMessages: number;
-    openTickets: number;
-    activeUsers: number;
-  }>;
+  // Admin Analytics - Comprehensive metrics
+  getAdminAnalytics(): Promise<AdminAnalytics>;
 
   // User Management
   getAllUsers(): Promise<User[]>;
@@ -512,38 +566,292 @@ export class DatabaseStorage implements IStorage {
     return allUsers.filter(u => u.role === 'admin');
   }
 
-  async getAdminAnalytics() {
+  async getAdminAnalytics(): Promise<AdminAnalytics> {
     const allClients = await db.select().from(clients);
     const allPartners = await db.select().from(partners);
     const allMatches = await db.select().from(matches);
     const allMessages = await db.select().from(messages);
     const allTickets = await db.select().from(supportTickets);
     const allUsers = await db.select().from(users);
+    const allSalesOpportunities = await db.select().from(partnerSalesOpportunities);
 
-    const mutualMatches = allMatches.filter(
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+    // Core totals
+    const mutualMatchCount = allMatches.filter(
       m => m.clientLiked === true && m.partnerAccepted === true
     ).length;
 
+    const activeUsers = allUsers.filter(u => {
+      if (!u.updatedAt) return false;
+      return new Date(u.updatedAt) > oneMonthAgo;
+    }).length;
+
+    // Conversion metrics
+    const matchConversionRate = allMatches.length > 0 
+      ? Math.round((mutualMatchCount / allMatches.length) * 100) 
+      : 0;
+
+    const clientResponses = allMatches.filter(m => m.clientLiked !== null).length;
+    const partnerResponses = allMatches.filter(m => m.partnerAccepted !== null).length;
+    const clientResponseRate = allMatches.length > 0 
+      ? Math.round((clientResponses / allMatches.length) * 100) 
+      : 0;
+    const partnerResponseRate = allMatches.length > 0 
+      ? Math.round((partnerResponses / allMatches.length) * 100) 
+      : 0;
+    const responseRate = Math.round((clientResponseRate + partnerResponseRate) / 2);
+
+    // Growth metrics
+    const newUsersThisWeek = allUsers.filter(u => {
+      if (!u.createdAt) return false;
+      return new Date(u.createdAt) > oneWeekAgo;
+    }).length;
+
+    const newUsersThisMonth = allUsers.filter(u => {
+      if (!u.createdAt) return false;
+      return new Date(u.createdAt) > oneMonthAgo;
+    }).length;
+
+    const usersLastMonth = allUsers.filter(u => {
+      if (!u.createdAt) return false;
+      const created = new Date(u.createdAt);
+      return created > twoMonthsAgo && created <= oneMonthAgo;
+    }).length;
+
+    const newMatchesThisWeek = allMatches.filter(m => {
+      if (!m.createdAt) return false;
+      return new Date(m.createdAt) > oneWeekAgo;
+    }).length;
+
+    const newMatchesThisMonth = allMatches.filter(m => {
+      if (!m.createdAt) return false;
+      return new Date(m.createdAt) > oneMonthAgo;
+    }).length;
+
+    const matchesLastMonth = allMatches.filter(m => {
+      if (!m.createdAt) return false;
+      const created = new Date(m.createdAt);
+      return created > twoMonthsAgo && created <= oneMonthAgo;
+    }).length;
+
+    const userGrowthPercent = usersLastMonth > 0 
+      ? Math.round(((newUsersThisMonth - usersLastMonth) / usersLastMonth) * 100) 
+      : newUsersThisMonth > 0 ? 100 : 0;
+
+    const matchGrowthPercent = matchesLastMonth > 0 
+      ? Math.round(((newMatchesThisMonth - matchesLastMonth) / matchesLastMonth) * 100) 
+      : newMatchesThisMonth > 0 ? 100 : 0;
+
+    // Revenue insights
+    const wonDeals = allSalesOpportunities.filter(o => o.stage === "won");
+    const lostDeals = allSalesOpportunities.filter(o => o.stage === "lost");
+    const inProgressDeals = allSalesOpportunities.filter(o => 
+      o.stage !== "won" && o.stage !== "lost"
+    );
+
+    const totalPipelineValue = inProgressDeals.reduce((sum, o) => sum + (o.expectedRevenue || 0), 0);
+    const closedDealsValue = wonDeals.reduce((sum, o) => sum + (o.expectedRevenue || 0), 0);
+    const lostDealsValue = lostDeals.reduce((sum, o) => sum + (o.expectedRevenue || 0), 0);
+    const averageDealSize = wonDeals.length > 0 
+      ? Math.round(closedDealsValue / wonDeals.length) 
+      : 0;
+
+    // Top performers - partners by match count
+    const partnerMatchCounts = new Map<string, number>();
+    allMatches.forEach(m => {
+      if (m.partnerId) {
+        partnerMatchCounts.set(m.partnerId, (partnerMatchCounts.get(m.partnerId) || 0) + 1);
+      }
+    });
+
+    const topPartnersByMatches = Array.from(partnerMatchCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([partnerId, matchCount]) => {
+        const partner = allPartners.find(p => p.id === partnerId);
+        return {
+          id: partnerId,
+          name: partner?.name || "Unknown",
+          company: partner?.company || "Unknown",
+          matchCount,
+        };
+      });
+
+    // Top partners by conversion rate (minimum 3 matches)
+    const partnerConversions = new Map<string, { mutual: number; total: number }>();
+    allMatches.forEach(m => {
+      if (m.partnerId) {
+        const current = partnerConversions.get(m.partnerId) || { mutual: 0, total: 0 };
+        current.total++;
+        if (m.clientLiked && m.partnerAccepted) {
+          current.mutual++;
+        }
+        partnerConversions.set(m.partnerId, current);
+      }
+    });
+
+    const topPartnersByConversion = Array.from(partnerConversions.entries())
+      .filter(([, stats]) => stats.total >= 3)
+      .map(([partnerId, stats]) => {
+        const partner = allPartners.find(p => p.id === partnerId);
+        return {
+          id: partnerId,
+          name: partner?.name || "Unknown",
+          company: partner?.company || "Unknown",
+          conversionRate: Math.round((stats.mutual / stats.total) * 100),
+          matchCount: stats.total,
+        };
+      })
+      .sort((a, b) => b.conversionRate - a.conversionRate)
+      .slice(0, 5);
+
+    // Industry distribution
+    const partnerIndustryCount = new Map<string, number>();
+    allPartners.forEach(p => {
+      const industry = p.industry || "Other";
+      partnerIndustryCount.set(industry, (partnerIndustryCount.get(industry) || 0) + 1);
+    });
+
+    const partnersByIndustry = Array.from(partnerIndustryCount.entries())
+      .map(([industry, count]) => ({ industry, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const clientIndustryCount = new Map<string, number>();
+    allClients.forEach(c => {
+      const industry = c.industry || "Other";
+      clientIndustryCount.set(industry, (clientIndustryCount.get(industry) || 0) + 1);
+    });
+
+    const clientsByIndustry = Array.from(clientIndustryCount.entries())
+      .map(([industry, count]) => ({ industry, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Support health
     const openTickets = allTickets.filter(
       t => t.status === "incoming" || t.status === "assigned" || t.status === "issue"
     ).length;
 
-    // Active users = users who logged in within last 30 days (approximated by recent activity)
-    const activeUsers = allUsers.filter(u => {
-      if (!u.updatedAt) return false;
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return new Date(u.updatedAt) > thirtyDaysAgo;
+    const ticketCategoryCount = new Map<string, number>();
+    allTickets.forEach(t => {
+      const category = t.category || "general";
+      ticketCategoryCount.set(category, (ticketCategoryCount.get(category) || 0) + 1);
+    });
+
+    const ticketsByCategory = Array.from(ticketCategoryCount.entries())
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const ticketPriorityCount = new Map<string, number>();
+    allTickets.forEach(t => {
+      const priority = t.priority || "medium";
+      ticketPriorityCount.set(priority, (ticketPriorityCount.get(priority) || 0) + 1);
+    });
+
+    const ticketsByPriority = Array.from(ticketPriorityCount.entries())
+      .map(([priority, count]) => ({ priority, count }))
+      .sort((a, b) => {
+        const order = ["urgent", "high", "medium", "low"];
+        return order.indexOf(a.priority) - order.indexOf(b.priority);
+      });
+
+    // Average resolution time for fixed tickets
+    const fixedTickets = allTickets.filter(t => t.status === "fixed" && t.createdAt && t.updatedAt);
+    let averageResolutionHours: number | null = null;
+    if (fixedTickets.length > 0) {
+      const totalHours = fixedTickets.reduce((sum, t) => {
+        const created = new Date(t.createdAt!).getTime();
+        const resolved = new Date(t.updatedAt!).getTime();
+        return sum + (resolved - created) / (1000 * 60 * 60);
+      }, 0);
+      averageResolutionHours = Math.round(totalHours / fixedTickets.length);
+    }
+
+    const resolvedThisWeek = allTickets.filter(t => {
+      if (t.status !== "fixed" || !t.updatedAt) return false;
+      return new Date(t.updatedAt) > oneWeekAgo;
     }).length;
 
+    // Recent activity
+    const recentMatches = allMatches
+      .filter(m => m.createdAt)
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
+      .slice(0, 5)
+      .map(m => {
+        const client = allClients.find(c => c.id === m.clientId);
+        const partner = allPartners.find(p => p.id === m.partnerId);
+        return {
+          id: m.id,
+          clientName: client?.company || "Unknown Client",
+          partnerName: partner?.company || "Unknown Partner",
+          createdAt: m.createdAt?.toISOString() || new Date().toISOString(),
+        };
+      });
+
+    const recentSignups = allUsers
+      .filter(u => u.createdAt && u.role)
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
+      .slice(0, 5)
+      .map(u => ({
+        id: u.id,
+        email: u.email,
+        role: u.role || "unknown",
+        createdAt: u.createdAt?.toISOString() || new Date().toISOString(),
+      }));
+
     return {
-      totalClients: allClients.length,
-      totalPartners: allPartners.length,
-      totalMatches: allMatches.length,
-      mutualMatches,
-      totalMessages: allMessages.length,
-      openTickets,
-      activeUsers,
+      totals: {
+        clients: allClients.length,
+        partners: allPartners.length,
+        matches: allMatches.length,
+        mutualMatches: mutualMatchCount,
+        messages: allMessages.length,
+        activeUsers,
+      },
+      conversion: {
+        matchConversionRate,
+        responseRate,
+        clientResponseRate,
+        partnerResponseRate,
+      },
+      growth: {
+        newUsersThisWeek,
+        newUsersThisMonth,
+        newMatchesThisWeek,
+        newMatchesThisMonth,
+        userGrowthPercent,
+        matchGrowthPercent,
+      },
+      revenue: {
+        totalPipelineValue,
+        closedDealsValue,
+        lostDealsValue,
+        averageDealSize,
+        dealsInProgress: inProgressDeals.length,
+      },
+      leaderboards: {
+        topPartnersByMatches,
+        topPartnersByConversion,
+      },
+      distribution: {
+        partnersByIndustry,
+        clientsByIndustry,
+      },
+      support: {
+        openTickets,
+        ticketsByCategory,
+        ticketsByPriority,
+        averageResolutionHours,
+        resolvedThisWeek,
+      },
+      activity: {
+        recentMatches,
+        recentSignups,
+      },
+      lastUpdated: new Date().toISOString(),
     };
   }
 
