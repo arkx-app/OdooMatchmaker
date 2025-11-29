@@ -204,6 +204,7 @@ function TicketDetailDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/tickets", ticket?.id, "comments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/tickets"] });
       setNewComment("");
       toast({
         title: "Comment added",
@@ -454,7 +455,6 @@ export default function AdminDashboard() {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
 
   const isAdmin = user?.role === "admin";
@@ -506,14 +506,16 @@ export default function AdminDashboard() {
       if (!res.ok) throw new Error("Failed to update ticket");
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedTicket) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/tickets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics"] });
+      if (updatedTicket) {
+        setSelectedTicket(updatedTicket);
+      }
       toast({
         title: "Ticket updated",
         description: "The support ticket has been updated successfully.",
       });
-      setTicketDialogOpen(false);
     },
     onError: () => {
       toast({
@@ -567,10 +569,9 @@ export default function AdminDashboard() {
       ticket.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ticket.name?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesStatus = statusFilter === "all" || ticket.status === statusFilter;
     const matchesPriority = priorityFilter === "all" || ticket.priority === priorityFilter;
     
-    return matchesSearch && matchesStatus && matchesPriority;
+    return matchesSearch && matchesPriority;
   });
 
   const filteredUsers = users.filter((u) => 
