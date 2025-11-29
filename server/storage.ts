@@ -1,5 +1,5 @@
 import { 
-  users, partners, clients, briefs, matches, messages, projects, supportTickets,
+  users, partners, clients, briefs, matches, messages, projects, supportTickets, ticketComments,
   type Partner, type InsertPartner, 
   type Client, type InsertClient,
   type Match, type InsertMatch,
@@ -8,6 +8,7 @@ import {
   type Message, type InsertMessage,
   type Project, type InsertProject,
   type SupportTicket, type InsertSupportTicket,
+  type TicketComment, type InsertTicketComment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -69,6 +70,13 @@ export interface IStorage {
   getSupportTicket(id: string): Promise<SupportTicket | undefined>;
   getAllSupportTickets(): Promise<SupportTicket[]>;
   updateSupportTicket(id: string, updates: Partial<SupportTicket>): Promise<SupportTicket | undefined>;
+  
+  // Ticket Comments
+  createTicketComment(comment: InsertTicketComment): Promise<TicketComment>;
+  getTicketComments(ticketId: string): Promise<TicketComment[]>;
+  
+  // Admin Users (for assignment)
+  getAdminUsers(): Promise<User[]>;
 
   // Admin Analytics
   getAdminAnalytics(): Promise<{
@@ -463,6 +471,26 @@ export class DatabaseStorage implements IStorage {
     return ticket;
   }
 
+  async createTicketComment(insertComment: InsertTicketComment): Promise<TicketComment> {
+    const [comment] = await db
+      .insert(ticketComments)
+      .values({
+        ...insertComment,
+        isInternal: insertComment.isInternal ?? true,
+      })
+      .returning();
+    return comment;
+  }
+
+  async getTicketComments(ticketId: string): Promise<TicketComment[]> {
+    return await db.select().from(ticketComments).where(eq(ticketComments.ticketId, ticketId));
+  }
+
+  async getAdminUsers(): Promise<User[]> {
+    const allUsers = await db.select().from(users);
+    return allUsers.filter(u => u.role === 'admin');
+  }
+
   async getAdminAnalytics() {
     const allClients = await db.select().from(clients);
     const allPartners = await db.select().from(partners);
@@ -476,7 +504,7 @@ export class DatabaseStorage implements IStorage {
     ).length;
 
     const openTickets = allTickets.filter(
-      t => t.status === "open" || t.status === "in_progress"
+      t => t.status === "incoming" || t.status === "assigned" || t.status === "issue"
     ).length;
 
     // Active users = users who logged in within last 30 days (approximated by recent activity)

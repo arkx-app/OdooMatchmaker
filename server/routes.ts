@@ -5,7 +5,8 @@ import { setupAuth, isAuthenticated, getCurrentUserId } from "./auth";
 import { 
   insertPartnerSchema, insertClientSchema, insertMatchSchema,
   insertBriefSchema, insertMessageSchema, insertProjectSchema,
-  updateMatchSchema, insertSupportTicketSchema, updateSupportTicketSchema
+  updateMatchSchema, insertSupportTicketSchema, updateSupportTicketSchema,
+  insertTicketCommentSchema
 } from "@shared/schema";
 import { seedPartners, seedBriefsForClient } from "./seed-data";
 
@@ -745,7 +746,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const updates: any = { ...result.data };
-      if (updates.status === "resolved" || updates.status === "closed") {
+      if (updates.status === "fixed") {
         updates.resolvedAt = new Date();
       }
 
@@ -757,6 +758,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating ticket:", error);
       res.status(500).json({ message: "Failed to update ticket" });
+    }
+  });
+
+  // Get admin users for ticket assignment
+  app.get("/api/admin/admins", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const admins = await storage.getAdminUsers();
+      // Exclude password hashes for security
+      const safeAdmins = admins.map(({ passwordHash, ...admin }) => admin);
+      res.json(safeAdmins);
+    } catch (error) {
+      console.error("Error fetching admins:", error);
+      res.status(500).json({ message: "Failed to fetch admins" });
+    }
+  });
+
+  // Get ticket comments
+  app.get("/api/admin/tickets/:id/comments", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const comments = await storage.getTicketComments(req.params.id);
+      // Sort by createdAt ascending (oldest first for conversation flow)
+      comments.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      });
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  // Add ticket comment
+  app.post("/api/admin/tickets/:id/comments", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const result = insertTicketCommentSchema.safeParse({
+        ...req.body,
+        ticketId: req.params.id,
+        userId: userId,
+        userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+      });
+
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid comment data", errors: result.error.flatten() });
+      }
+
+      const comment = await storage.createTicketComment(result.data);
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      res.status(500).json({ message: "Failed to create comment" });
     }
   });
 

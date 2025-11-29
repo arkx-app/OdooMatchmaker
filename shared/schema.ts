@@ -133,7 +133,7 @@ export const projects = pgTable("projects", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Support tickets for helpdesk
+// Support tickets for helpdesk - Kanban pipeline phases
 export const supportTickets = pgTable("support_tickets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id"), // Can be null for anonymous submissions
@@ -144,14 +144,26 @@ export const supportTickets = pgTable("support_tickets", {
   message: text("message").notNull(),
   category: text("category").default("general"), // 'general', 'technical', 'billing', 'feedback'
   priority: text("priority").default("medium"), // 'low', 'medium', 'high', 'urgent'
-  status: text("status").default("open"), // 'open', 'in_progress', 'resolved', 'closed'
+  status: text("status").default("incoming"), // Pipeline phases: 'incoming', 'assigned', 'fixed', 'issue'
   assignedTo: varchar("assigned_to"), // Admin user ID
+  assignedToName: text("assigned_to_name"), // Admin name for display
   adminNotes: text("admin_notes"),
   resolution: text("resolution"),
   attachmentUrl: text("attachment_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   resolvedAt: timestamp("resolved_at"),
+});
+
+// Ticket comments for internal notes and updates
+export const ticketComments = pgTable("ticket_comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketId: varchar("ticket_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  userName: text("user_name").notNull(),
+  content: text("content").notNull(),
+  isInternal: boolean("is_internal").default(true), // Internal notes only visible to admins
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Zod schemas for inserts
@@ -277,11 +289,19 @@ export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit
 });
 
 export const updateSupportTicketSchema = z.object({
-  status: z.enum(["open", "in_progress", "resolved", "closed"]).optional(),
+  status: z.enum(["incoming", "assigned", "fixed", "issue"]).optional(),
   priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
   assignedTo: z.string().optional().nullable(),
+  assignedToName: z.string().optional().nullable(),
   adminNotes: z.string().optional().nullable(),
   resolution: z.string().optional().nullable(),
+});
+
+export const insertTicketCommentSchema = createInsertSchema(ticketComments).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  isInternal: z.boolean().optional(),
 });
 
 // Type exports
@@ -309,3 +329,6 @@ export type InsertProject = z.infer<typeof insertProjectSchema>;
 
 export type SupportTicket = typeof supportTickets.$inferSelect;
 export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
+
+export type TicketComment = typeof ticketComments.$inferSelect;
+export type InsertTicketComment = z.infer<typeof insertTicketCommentSchema>;
