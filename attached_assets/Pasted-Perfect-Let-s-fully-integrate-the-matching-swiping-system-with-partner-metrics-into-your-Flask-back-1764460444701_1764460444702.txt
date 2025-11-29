@@ -1,0 +1,219 @@
+Perfect! Let’s fully integrate the matching/swiping system with partner metrics into your Flask backend so that:
+
+Clients and partners can swipe, like/dislike, and matches are automatically recorded.
+
+Once a match occurs, it’s added to matches_db, which feeds into the admin partner ranking.
+
+Partners and clients can send messages to matches, and all messages increment messages_db for analytics.
+
+Admin panel metrics update automatically in real time based on matches, messages, and activity.
+
+Here’s the updated Replit-ready Flask backend:
+
+from flask import Flask, request, jsonify
+from datetime import datetime
+from werkzeug.security import generate_password_hash
+
+app = Flask(__name__)
+
+# -----------------------
+# In-memory databases
+# -----------------------
+client_tickets_db = {}       # {email: [tickets]}
+partner_tickets_db = {}      # {email: [tickets]}
+admin_tickets_db = {}        # {ticket_id: ticket_data}
+matches_db = {}              # {partner_email: [client_emails]}
+messages_db = {}             # {partner_email: count}
+
+# Likes tracking for swiping
+likes_db = {
+    "clients": {},  # {client_email: [partner_emails_liked]}
+    "partners": {}  # {partner_email: [client_emails_liked]}
+}
+
+# Users DB
+users_db = {
+    "bauweraerts.rune@gmail.com": {"type": "client", "password_hash": generate_password_hash("clientpass"),
+                                   "details":{"description":"Client","goals":"Goals","industry":"Industry"}},
+    "partner1@example.com": {"type": "partner", "password_hash": generate_password_hash("partnerpass"),
+                             "details":{"description":"Partner1","goals":"Goals","industry":"Industry"}},
+    "partner2@example.com": {"type": "partner", "password_hash": generate_password_hash("partnerpass"),
+                             "details":{"description":"Partner2","goals":"Goals","industry":"Industry"}},
+    "rune.meestercopper@gmail.com": {"type": "admin", "password_hash": generate_password_hash("adminpass"),
+                                     "details":{"description":"Admin","goals":"Goals","industry":"Industry"}}
+}
+
+# -----------------------
+# Helper functions
+# -----------------------
+def save_to_admin(ticket_data):
+    ticket_id = len(admin_tickets_db) + 1
+    admin_tickets_db[ticket_id] = ticket_data
+    return ticket_id
+
+def push_reply_to_user(ticket, reply_message, admin_email):
+    creator_email = ticket["creator_email"]
+    reply_obj = {"sender": admin_email, "message": reply_message, "timestamp": datetime.utcnow().isoformat()}
+    ticket["messages"].append(reply_obj)
+    if creator_email in client_tickets_db:
+        client_tickets_db[creator_email][-1]["messages"].append(reply_obj)
+    elif creator_email in partner_tickets_db:
+        partner_tickets_db[creator_email][-1]["messages"].append(reply_obj)
+
+def check_match(client_email, partner_email):
+    client_likes = likes_db["clients"].get(client_email, [])
+    partner_likes = likes_db["partners"].get(partner_email, [])
+    if client_email in partner_likes and partner_email in client_likes:
+        # It's a match!
+        matches_db.setdefault(partner_email, []).append(client_email)
+        return True
+    return False
+
+# -----------------------
+# Ticket endpoints
+# -----------------------
+@app.route("/create_ticket", methods=["POST"])
+def create_ticket():
+    data = request.json
+    user_email = data.get("user_email")
+    dashboard_type = data.get("dashboard_type")
+    issue = data.get("issue")
+
+    if user_email not in users_db or users_db[user_email]["type"] != dashboard_type:
+        return jsonify({"error": "Invalid user"}), 400
+
+    ticket = {"creator_email": user_email, "issue": issue, "status": "Incoming",
+              "timestamp": datetime.utcnow().isoformat(), "messages":[]}
+
+    if dashboard_type == "client":
+        client_tickets_db.setdefault(user_email, []).append(ticket)
+    elif dashboard_type == "partner":
+        partner_tickets_db.setdefault(user_email, []).append(ticket)
+
+    save_to_admin(ticket)
+    return jsonify({"message": "Ticket created", "ticket": ticket}), 201
+
+@app.route("/admin_reply/<int:ticket_id>", methods=["POST"])
+def admin_reply(ticket_id):
+    data = request.json
+    reply_message = data.get("message")
+    admin_email = data.get("admin_email")
+    new_status = data.get("status")
+
+    if admin_email not in users_db or users_db[admin_email]["type"] != "admin":
+        return jsonify({"error": "Invalid admin"}), 400
+    if ticket_id not in admin_tickets_db:
+        return jsonify({"error": "Ticket not found"}), 404
+
+    ticket = admin_tickets_db[ticket_id]
+    if new_status:
+        ticket["status"] = new_status
+    push_reply_to_user(ticket, reply_message, admin_email)
+    return jsonify({"message": "Reply sent"}), 200
+
+# -----------------------
+# Swiping and matching endpoints
+# -----------------------
+@app.route("/swipe", methods=["POST"])
+def swipe():
+    data = request.json
+    user_email = data.get("user_email")
+    target_email = data.get("target_email")
+    action = data.get("action")  # "like" or "dislike"
+
+    if user_email not in users_db or target_email not in users_db:
+        return jsonify({"error":"Invalid user(s)"}),400
+
+    user_type = users_db[user_email]["type"]
+    target_type = users_db[target_email]["type"]
+
+    if user_type == "client" and target_type == "partner":
+        likes_db["clients"].setdefault(user_email, [])
+        if action=="like":
+            likes_db["clients"][user_email].append(target_email)
+            matched = check_match(user_email, target_email)
+            return jsonify({"message":"Swiped successfully","match":matched})
+    elif user_type=="partner" and target_type=="client":
+        likes_db["partners"].setdefault(user_email, [])
+        if action=="like":
+            likes_db["partners"][user_email].append(target_email)
+            matched = check_match(target_email, user_email)
+            return jsonify({"message":"Swiped successfully","match":matched})
+    return jsonify({"message":"Swiped successfully","match":False})
+
+# -----------------------
+# Messaging between matches
+# -----------------------
+@app.route("/send_message", methods=["POST"])
+def send_message():
+    data = request.json
+    sender = data.get("sender")
+    receiver = data.get("receiver")
+    message = data.get("message")
+
+    # Check if they are a match
+    matched = False
+    if sender in likes_db["clients"] and receiver in likes_db["partners"].get(receiver, []):
+        matched = True
+    elif sender in likes_db["partners"] and receiver in likes_db["clients"].get(receiver, []):
+        matched = True
+
+    if not matched and not (users_db[sender]["type"]=="admin"):
+        return jsonify({"error":"Not matched"}),400
+
+    # Count messages if partner sends
+    if users_db[sender]["type"]=="partner":
+        messages_db[sender] = messages_db.get(sender,0)+1
+
+    return jsonify({"message":"Message sent successfully"}),200
+
+# -----------------------
+# Admin partner performance endpoint
+# -----------------------
+@app.route("/report/partner_metrics", methods=["GET"])
+def partner_metrics():
+    metrics = {}
+    for email, info in users_db.items():
+        if info["type"]!="partner":
+            continue
+        tickets_created = len(partner_tickets_db.get(email, []))
+        total_matches = len(matches_db.get(email, []))
+        total_messages = messages_db.get(email,0)
+        metrics[email] = {
+            "tickets_created": tickets_created,
+            "matches": total_matches,
+            "messages_sent": total_messages,
+            "activity_score": tickets_created + total_matches + total_messages
+        }
+    sorted_metrics = dict(sorted(metrics.items(), key=lambda x: x[1]["activity_score"], reverse=True))
+    return jsonify(sorted_metrics)
+
+# -----------------------
+# Run app
+# -----------------------
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=3000, debug=True)
+
+✅ What’s New / Fully Integrated
+
+Client and partner swiping system
+
+Clients swipe partners, partners swipe clients
+
+Likes are stored in likes_db
+
+Matches automatically stored in matches_db
+
+Messaging system between matches
+
+Partners sending messages increment messages_db
+
+Admins can send messages to any user
+
+Partner metrics for admin dashboard
+
+Tickets created, messages sent, matches count
+
+Sorted by activity score automatically
+
+Everything feeds into admin dashboard in real time
