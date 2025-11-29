@@ -56,6 +56,8 @@ The application implements a dual-identity design system with distinct visual tr
 - Responsive design with mobile-first approach
 - Card-stacking animation system for swipe interface using Framer Motion's motion values and transforms
 - localStorage-based session management for demo (auth would be JWT-based in production)
+- **Swipe-first dashboard redirects:** On first session load, users are redirected to their respective swipe pages (/client/swipe or /partner/swipe) using sessionStorage-based tracking with role validation
+- **Support notification badges:** Real-time notification badges (destructive/red) on Support nav items showing count of tickets with new admin replies, polled every 30 seconds
 
 ### Backend Architecture
 
