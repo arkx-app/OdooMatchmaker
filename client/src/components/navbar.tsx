@@ -40,12 +40,14 @@ export default function Navbar() {
   };
 
   const getDashboardPath = () => {
+    if (user?.role === "admin") return "/admin";
     if (user?.role === "partner") return "/partner/dashboard";
     if (user?.role === "client") return "/client/dashboard";
     return "/get-started";
   };
 
   const getProfilePath = () => {
+    if (user?.role === "admin") return "/admin";
     if (user?.role === "partner") return "/partner/dashboard";
     if (user?.role === "client") return "/client/dashboard";
     return "/get-started";
