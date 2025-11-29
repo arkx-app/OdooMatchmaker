@@ -226,37 +226,51 @@ function TicketDetailDialog({
 }) {
   const { toast } = useToast();
   const [newComment, setNewComment] = useState("");
+  const [adminReply, setAdminReply] = useState("");
+  const [activeMessageTab, setActiveMessageTab] = useState<"conversation" | "internal">("conversation");
   
-  // Fetch comments for this ticket
+  // Fetch all comments for this ticket
   const { data: comments = [], isLoading: commentsLoading } = useQuery<TicketComment[]>({
     queryKey: ["/api/admin/tickets", ticket?.id, "comments"],
     enabled: !!ticket?.id && open,
   });
 
+  // Separate internal notes from public conversation
+  const publicMessages = comments.filter(c => !c.isInternal);
+  const internalNotes = comments.filter(c => c.isInternal);
+
   const addCommentMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ content, isInternal }: { content: string; isInternal: boolean }) => {
       const res = await fetch(`/api/admin/tickets/${ticket?.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, isInternal: true }),
+        body: JSON.stringify({ content, isInternal }),
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to add comment");
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/tickets", ticket?.id, "comments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/tickets"] });
-      setNewComment("");
-      toast({
-        title: "Comment added",
-        description: "Internal note has been added to the ticket.",
-      });
+      if (variables.isInternal) {
+        setNewComment("");
+        toast({
+          title: "Note added",
+          description: "Internal note has been added to the ticket.",
+        });
+      } else {
+        setAdminReply("");
+        toast({
+          title: "Reply sent",
+          description: "Your reply has been sent to the user.",
+        });
+      }
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to add comment. Please try again.",
+        description: "Failed to add message. Please try again.",
         variant: "destructive",
       });
     },
@@ -396,68 +410,181 @@ function TicketDetailDialog({
 
             <Separator />
 
-            {/* Internal Notes / Comments Section */}
+            {/* Messaging Section with Tabs */}
             <div>
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <MessageCircle className="w-4 h-4" />
-                Internal Notes
-              </Label>
-              
-              <div className="mt-3 space-y-3">
-                {commentsLoading ? (
-                  <div className="text-center py-4 text-muted-foreground text-sm">
-                    Loading notes...
-                  </div>
-                ) : comments.length === 0 ? (
-                  <div className="text-center py-4 text-muted-foreground text-sm">
-                    No internal notes yet
-                  </div>
-                ) : (
-                  <div className="space-y-3 max-h-[200px] overflow-y-auto">
-                    {comments.map((comment) => (
-                      <div key={comment.id} className="p-3 bg-muted rounded-lg">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-sm font-medium">{comment.userName}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {comment.createdAt ? new Date(comment.createdAt).toLocaleString() : "N/A"}
-                          </span>
-                        </div>
-                        <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Add new comment */}
-                <div className="flex gap-2">
-                  <Textarea
-                    placeholder="Add an internal note..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="min-h-[80px]"
-                    data-testid="input-add-comment"
-                  />
-                </div>
+              <div className="flex items-center gap-2 mb-3">
                 <Button
-                  onClick={() => {
-                    if (newComment.trim()) {
-                      addCommentMutation.mutate(newComment.trim());
-                    }
-                  }}
-                  disabled={!newComment.trim() || addCommentMutation.isPending}
+                  variant={activeMessageTab === "conversation" ? "default" : "outline"}
                   size="sm"
-                  data-testid="button-add-comment"
+                  onClick={() => setActiveMessageTab("conversation")}
+                  data-testid="button-tab-conversation"
                 >
-                  {addCommentMutation.isPending ? (
-                    <>Adding...</>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Add Note
-                    </>
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  User Conversation
+                  {publicMessages.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">{publicMessages.length}</Badge>
+                  )}
+                </Button>
+                <Button
+                  variant={activeMessageTab === "internal" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveMessageTab("internal")}
+                  data-testid="button-tab-internal"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Internal Notes
+                  {internalNotes.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">{internalNotes.length}</Badge>
                   )}
                 </Button>
               </div>
+              
+              {activeMessageTab === "conversation" ? (
+                <div className="space-y-3">
+                  {commentsLoading ? (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      Loading conversation...
+                    </div>
+                  ) : publicMessages.length === 0 ? (
+                    <div className="text-center py-6 text-muted-foreground text-sm bg-muted rounded-lg">
+                      <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>No messages yet</p>
+                      <p className="text-xs mt-1">Send a reply to start the conversation</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-[200px] overflow-y-auto">
+                      {publicMessages.map((msg) => {
+                        const isAdmin = msg.userRole === "admin";
+                        return (
+                          <div 
+                            key={msg.id} 
+                            className={`p-3 rounded-lg ${
+                              isAdmin 
+                                ? "bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 ml-4" 
+                                : "bg-muted mr-4"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="text-sm font-medium flex items-center gap-2">
+                                {isAdmin && <Shield className="w-3 h-3 text-blue-600" />}
+                                {msg.userName}
+                                {isAdmin && <Badge variant="outline" className="text-xs">Support</Badge>}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {msg.createdAt ? new Date(msg.createdAt).toLocaleString() : "N/A"}
+                              </span>
+                            </div>
+                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Reply to user */}
+                  <div className="border-t pt-3 mt-3">
+                    <Label className="text-sm font-medium mb-2 block">Reply to User</Label>
+                    <div className="flex gap-2">
+                      <Textarea
+                        placeholder="Type your reply to the user..."
+                        value={adminReply}
+                        onChange={(e) => setAdminReply(e.target.value)}
+                        className="min-h-[80px]"
+                        data-testid="input-admin-reply"
+                      />
+                    </div>
+                    <Button
+                      onClick={() => {
+                        if (adminReply.trim()) {
+                          addCommentMutation.mutate({ content: adminReply.trim(), isInternal: false });
+                        }
+                      }}
+                      disabled={!adminReply.trim() || addCommentMutation.isPending}
+                      size="sm"
+                      className="mt-2"
+                      data-testid="button-send-reply"
+                    >
+                      {addCommentMutation.isPending ? (
+                        <>Sending...</>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 mr-2" />
+                          Send Reply
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {commentsLoading ? (
+                    <div className="text-center py-4 text-muted-foreground text-sm">
+                      Loading notes...
+                    </div>
+                  ) : internalNotes.length === 0 ? (
+                    <div className="text-center py-6 text-muted-foreground text-sm bg-muted rounded-lg">
+                      <Shield className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>No internal notes</p>
+                      <p className="text-xs mt-1">Notes here are only visible to admins</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-[200px] overflow-y-auto">
+                      {internalNotes.map((note) => (
+                        <div key={note.id} className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span className="text-sm font-medium flex items-center gap-2">
+                              <Shield className="w-3 h-3 text-yellow-600" />
+                              {note.userName}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {note.createdAt ? new Date(note.createdAt).toLocaleString() : "N/A"}
+                            </span>
+                          </div>
+                          <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add internal note */}
+                  <div className="border-t pt-3 mt-3">
+                    <Label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      Add Internal Note (Admin Only)
+                    </Label>
+                    <div className="flex gap-2">
+                      <Textarea
+                        placeholder="Add a private note for admins only..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        className="min-h-[80px]"
+                        data-testid="input-add-comment"
+                      />
+                    </div>
+                    <Button
+                      onClick={() => {
+                        if (newComment.trim()) {
+                          addCommentMutation.mutate({ content: newComment.trim(), isInternal: true });
+                        }
+                      }}
+                      disabled={!newComment.trim() || addCommentMutation.isPending}
+                      size="sm"
+                      variant="outline"
+                      className="mt-2"
+                      data-testid="button-add-comment"
+                    >
+                      {addCommentMutation.isPending ? (
+                        <>Adding...</>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 mr-2" />
+                          Add Note
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Resolution field */}
