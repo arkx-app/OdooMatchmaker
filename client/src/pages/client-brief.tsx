@@ -11,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { LogOut, ArrowLeft, Euro } from "lucide-react";
-import { Link } from "wouter";
 
 const modules = ["Accounting", "CRM", "Sales", "Inventory", "HR", "Manufacturing", "Website"];
 
@@ -273,11 +272,14 @@ export default function ClientBrief() {
       <div className="min-h-screen bg-background">
         <header className="border-b bg-card sticky top-0 z-50 backdrop-blur-lg">
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-2">
-            <Link href="/">
-              <Button variant="ghost" size="icon" data-testid="button-back-profile">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate("/client/dashboard")}
+              data-testid="button-back-profile"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <h1 className="text-xl font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent">
               Complete Your Profile
             </h1>
@@ -359,11 +361,14 @@ export default function ClientBrief() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-50 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-2">
-          <Link href="/">
-            <Button variant="ghost" size="icon" data-testid="button-back">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate("/client/dashboard")}
+            data-testid="button-back"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
           <h1 className="text-xl font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent">
             Create Project Brief
           </h1>

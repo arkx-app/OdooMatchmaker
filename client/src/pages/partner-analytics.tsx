@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { TrendingUp, Users, CheckCircle, DollarSign } from "lucide-react";
+import { TrendingUp, Users, CheckCircle, DollarSign, ArrowLeft } from "lucide-react";
 
 export default function PartnerAnalytics() {
+  const [, navigate] = useLocation();
   const profile = JSON.parse(localStorage.getItem("profile") || "{}");
 
   const { data: metrics = {} } = useQuery({
@@ -47,10 +50,22 @@ export default function PartnerAnalytics() {
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">Partner Analytics</h1>
-        <p className="text-muted-foreground mb-8">
-          Your matchmaking performance and ROI tracking
-        </p>
+        <div className="flex items-center gap-4 mb-6">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => navigate("/partner/dashboard")}
+            data-testid="button-back-to-dashboard"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Partner Analytics</h1>
+            <p className="text-muted-foreground">
+              Your matchmaking performance and ROI tracking
+            </p>
+          </div>
+        </div>
 
         {/* Stats Grid */}
         <div className="grid md:grid-cols-4 gap-4 mb-8">

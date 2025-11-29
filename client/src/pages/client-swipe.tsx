@@ -352,6 +352,14 @@ export default function ClientSwipe() {
       <header className="border-b bg-card shrink-0">
         <div className="px-4 py-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate("/client/dashboard")}
+              data-testid="button-back-to-dashboard"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <h1 className="text-lg font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent">
               Partner Discovery
             </h1>
