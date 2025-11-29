@@ -72,6 +72,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { SupportFormSheet } from "@/components/support-form";
 import { useAuth } from "@/hooks/useAuth";
 import { useGamification } from "@/hooks/use-gamification";
 import { AchievementsList } from "@/components/achievement-badge";
@@ -838,6 +839,26 @@ export default function ClientDashboard() {
                         {stats.totalPoints}
                       </Badge>
                     </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>Support</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SupportFormSheet 
+                      userEmail={user?.email || undefined}
+                      userName={`${user?.firstName} ${user?.lastName}`}
+                      userType="client"
+                      trigger={
+                        <SidebarMenuButton data-testid="nav-support">
+                          <HelpCircle className="w-4 h-4" />
+                          <span>Get Help</span>
+                        </SidebarMenuButton>
+                      }
+                    />
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>

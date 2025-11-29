@@ -23,6 +23,7 @@ import Messaging from "@/pages/messaging";
 import PartnerAnalytics from "@/pages/partner-analytics";
 import BookDemo from "@/pages/book-demo";
 import Checkout from "@/pages/checkout";
+import AdminDashboard from "@/pages/admin-dashboard";
 
 function Router() {
   return (
@@ -48,6 +49,8 @@ function Router() {
       <Route path="/client/pricing" component={ClientPricing} />
       <Route path="/book-demo" component={BookDemo} />
       <Route path="/checkout" component={Checkout} />
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

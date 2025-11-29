@@ -133,6 +133,27 @@ export const projects = pgTable("projects", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Support tickets for helpdesk
+export const supportTickets = pgTable("support_tickets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id"), // Can be null for anonymous submissions
+  userType: text("user_type").notNull(), // 'client', 'partner', 'anonymous'
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  category: text("category").default("general"), // 'general', 'technical', 'billing', 'feedback'
+  priority: text("priority").default("medium"), // 'low', 'medium', 'high', 'urgent'
+  status: text("status").default("open"), // 'open', 'in_progress', 'resolved', 'closed'
+  assignedTo: varchar("assigned_to"), // Admin user ID
+  adminNotes: text("admin_notes"),
+  resolution: text("resolution"),
+  attachmentUrl: text("attachment_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+});
+
 // Zod schemas for inserts
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -239,6 +260,30 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   clientSatisfaction: z.number().optional(),
 });
 
+export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  resolvedAt: true,
+}).extend({
+  userId: z.string().optional().nullable(),
+  category: z.string().optional(),
+  priority: z.string().optional(),
+  status: z.string().optional(),
+  assignedTo: z.string().optional().nullable(),
+  adminNotes: z.string().optional().nullable(),
+  resolution: z.string().optional().nullable(),
+  attachmentUrl: z.string().optional().nullable(),
+});
+
+export const updateSupportTicketSchema = z.object({
+  status: z.enum(["open", "in_progress", "resolved", "closed"]).optional(),
+  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+  assignedTo: z.string().optional().nullable(),
+  adminNotes: z.string().optional().nullable(),
+  resolution: z.string().optional().nullable(),
+});
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -261,3 +306,6 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
+
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;

@@ -5,7 +5,7 @@ import { setupAuth, isAuthenticated, getCurrentUserId } from "./auth";
 import { 
   insertPartnerSchema, insertClientSchema, insertMatchSchema,
   insertBriefSchema, insertMessageSchema, insertProjectSchema,
-  updateMatchSchema
+  updateMatchSchema, insertSupportTicketSchema, updateSupportTicketSchema
 } from "@shared/schema";
 import { seedPartners, seedBriefsForClient } from "./seed-data";
 
@@ -663,6 +663,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(enriched);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch mutual matches" });
+    }
+  });
+
+  // ========== ADMIN ROUTES ==========
+
+  // Middleware to check if user is admin
+  const isAdmin = async (req: Request, res: Response, next: Function) => {
+    const userId = getCurrentUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const user = await storage.getUser(userId);
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    next();
+  };
+
+  // Get admin analytics
+  app.get("/api/admin/analytics", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const analytics = await storage.getAdminAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching admin analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  // Get all users for admin
+  app.get("/api/admin/users", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      // Exclude password hashes for security
+      const safeUsers = users.map(({ passwordHash, ...user }) => user);
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Get all support tickets for admin
+  app.get("/api/admin/tickets", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const tickets = await storage.getAllSupportTickets();
+      // Sort by createdAt descending (newest first)
+      tickets.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+      res.status(500).json({ message: "Failed to fetch tickets" });
+    }
+  });
+
+  // Get single ticket
+  app.get("/api/admin/tickets/:id", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const ticket = await storage.getSupportTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error fetching ticket:", error);
+      res.status(500).json({ message: "Failed to fetch ticket" });
+    }
+  });
+
+  // Update ticket (admin only)
+  app.patch("/api/admin/tickets/:id", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const result = updateSupportTicketSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid ticket data", errors: result.error.flatten() });
+      }
+
+      const updates: any = { ...result.data };
+      if (updates.status === "resolved" || updates.status === "closed") {
+        updates.resolvedAt = new Date();
+      }
+
+      const ticket = await storage.updateSupportTicket(req.params.id, updates);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error updating ticket:", error);
+      res.status(500).json({ message: "Failed to update ticket" });
+    }
+  });
+
+  // ========== PUBLIC SUPPORT TICKET ROUTES ==========
+
+  // Create support ticket (accessible by anyone - clients, partners, or anonymous)
+  app.post("/api/tickets", async (req, res) => {
+    try {
+      const result = insertSupportTicketSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid ticket data", errors: result.error.flatten() });
+      }
+
+      // Try to get user ID if authenticated
+      let userId = null;
+      try {
+        userId = getCurrentUserId(req);
+      } catch {
+        // User not authenticated, that's fine for support tickets
+      }
+
+      const ticket = await storage.createSupportTicket({
+        ...result.data,
+        userId: userId || result.data.userId,
+      });
+
+      res.status(201).json(ticket);
+    } catch (error) {
+      console.error("Error creating ticket:", error);
+      res.status(500).json({ message: "Failed to create ticket" });
+    }
+  });
+
+  // Get all clients and partners count (for admin dashboard quick stats)
+  app.get("/api/admin/stats", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const clients = await storage.getAllClients();
+      const partners = await storage.getAllPartners();
+      const briefs = await storage.getAllBriefs();
+      
+      res.json({
+        totalClients: clients.length,
+        totalPartners: partners.length,
+        totalBriefs: briefs.length,
+        recentClients: clients.slice(-5).reverse(),
+        recentPartners: partners.slice(-5).reverse(),
+      });
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+      res.status(500).json({ message: "Failed to fetch stats" });
     }
   });
 

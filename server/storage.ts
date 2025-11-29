@@ -1,5 +1,5 @@
 import { 
-  users, partners, clients, briefs, matches, messages, projects,
+  users, partners, clients, briefs, matches, messages, projects, supportTickets,
   type Partner, type InsertPartner, 
   type Client, type InsertClient,
   type Match, type InsertMatch,
@@ -7,6 +7,7 @@ import {
   type Brief, type InsertBrief,
   type Message, type InsertMessage,
   type Project, type InsertProject,
+  type SupportTicket, type InsertSupportTicket,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -62,6 +63,26 @@ export interface IStorage {
     conversions: number;
     totalProjectValue: number;
   }>;
+
+  // Support Tickets
+  createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
+  getSupportTicket(id: string): Promise<SupportTicket | undefined>;
+  getAllSupportTickets(): Promise<SupportTicket[]>;
+  updateSupportTicket(id: string, updates: Partial<SupportTicket>): Promise<SupportTicket | undefined>;
+
+  // Admin Analytics
+  getAdminAnalytics(): Promise<{
+    totalClients: number;
+    totalPartners: number;
+    totalMatches: number;
+    mutualMatches: number;
+    totalMessages: number;
+    openTickets: number;
+    activeUsers: number;
+  }>;
+
+  // User Management
+  getAllUsers(): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -404,6 +425,81 @@ export class DatabaseStorage implements IStorage {
       conversions,
       totalProjectValue,
     };
+  }
+
+  async createSupportTicket(insertTicket: InsertSupportTicket): Promise<SupportTicket> {
+    const [ticket] = await db
+      .insert(supportTickets)
+      .values({
+        ...insertTicket,
+        userId: insertTicket.userId || null,
+        category: insertTicket.category || "general",
+        priority: insertTicket.priority || "medium",
+        status: insertTicket.status || "open",
+        assignedTo: insertTicket.assignedTo || null,
+        adminNotes: insertTicket.adminNotes || null,
+        resolution: insertTicket.resolution || null,
+        attachmentUrl: insertTicket.attachmentUrl || null,
+      })
+      .returning();
+    return ticket;
+  }
+
+  async getSupportTicket(id: string): Promise<SupportTicket | undefined> {
+    const [ticket] = await db.select().from(supportTickets).where(eq(supportTickets.id, id));
+    return ticket;
+  }
+
+  async getAllSupportTickets(): Promise<SupportTicket[]> {
+    return await db.select().from(supportTickets);
+  }
+
+  async updateSupportTicket(id: string, updates: Partial<SupportTicket>): Promise<SupportTicket | undefined> {
+    const [ticket] = await db
+      .update(supportTickets)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(supportTickets.id, id))
+      .returning();
+    return ticket;
+  }
+
+  async getAdminAnalytics() {
+    const allClients = await db.select().from(clients);
+    const allPartners = await db.select().from(partners);
+    const allMatches = await db.select().from(matches);
+    const allMessages = await db.select().from(messages);
+    const allTickets = await db.select().from(supportTickets);
+    const allUsers = await db.select().from(users);
+
+    const mutualMatches = allMatches.filter(
+      m => m.clientLiked === true && m.partnerAccepted === true
+    ).length;
+
+    const openTickets = allTickets.filter(
+      t => t.status === "open" || t.status === "in_progress"
+    ).length;
+
+    // Active users = users who logged in within last 30 days (approximated by recent activity)
+    const activeUsers = allUsers.filter(u => {
+      if (!u.updatedAt) return false;
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      return new Date(u.updatedAt) > thirtyDaysAgo;
+    }).length;
+
+    return {
+      totalClients: allClients.length,
+      totalPartners: allPartners.length,
+      totalMatches: allMatches.length,
+      mutualMatches,
+      totalMessages: allMessages.length,
+      openTickets,
+      activeUsers,
+    };
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
   }
 }
 

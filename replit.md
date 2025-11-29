@@ -40,6 +40,7 @@ The application implements a dual-identity design system with distinct visual tr
 - **Partner Dashboard (`/partner/dashboard`):** View incoming client briefs, accept/decline matches
 - **Messaging (`/messages/:id`):** Real-time DM system between matched clients and partners
 - **Partner Analytics (`/partner/analytics`):** ROI dashboard with conversion metrics and project value tracking
+- **Admin Dashboard (`/admin`):** Internal platform management for administrators with analytics, helpdesk, and user management
 
 **Key Frontend Patterns:**
 - Component-based architecture with reusable UI primitives
@@ -105,6 +106,16 @@ RESTful API endpoints organized by resource:
 **Analytics:**
 - `GET /api/analytics/partner/:partnerId` - Partner ROI metrics (matches sent, conversions, total value)
 
+**Admin (requires admin role):**
+- `GET /api/admin/analytics` - Platform-wide analytics (users, matches, tickets)
+- `GET /api/admin/users` - List all users (excluding password hashes)
+- `GET /api/admin/tickets` - List all support tickets
+- `GET /api/admin/tickets/:id` - Get specific ticket details
+- `PATCH /api/admin/tickets/:id` - Update ticket status/priority
+
+**Support Tickets:**
+- `POST /api/tickets` - Submit new support ticket (accessible by anyone)
+
 **Business Logic:**
 - In-memory storage implementation (MemStorage) with interface-based design allowing easy migration to database persistence
 - Seeded sample partner data for demonstration
@@ -138,6 +149,13 @@ The application uses Drizzle ORM with PostgreSQL, defining three core tables:
    - Client-Partner relationship tracking
    - Like/dislike decisions
    - Mutual match detection flag
+
+4. **Support Tickets Table:**
+   - User contact information (name, email)
+   - Ticket details (subject, message, category)
+   - Status tracking (open, in_progress, resolved, closed)
+   - Priority levels (low, medium, high)
+   - Admin notes and resolution fields
 
 **Schema Validation:**
 - Zod schemas derived from Drizzle table definitions using `createInsertSchema`
