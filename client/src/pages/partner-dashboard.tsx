@@ -150,7 +150,7 @@ function StatCard({
   );
 }
 
-function LeadCard({ 
+function LikeCard({ 
   match, 
   onAccept, 
   onDecline, 
@@ -167,7 +167,7 @@ function LeadCard({
   const brief = match.brief;
 
   return (
-    <Card className="overflow-visible hover-elevate transition-all" data-testid={`card-lead-${match.id}`}>
+    <Card className="overflow-visible hover-elevate transition-all" data-testid={`card-like-${match.id}`}>
       <CardContent className="p-5">
         <div className="flex gap-4">
           <div className="w-14 h-14 rounded-md bg-gradient-to-br from-orange-500 to-pink-600 flex items-center justify-center text-white font-bold text-lg shrink-0">
@@ -189,7 +189,7 @@ function LeadCard({
                   variant={match.status === "suggested" ? "secondary" : match.status === "accepted" ? "default" : "outline"}
                   className="text-xs"
                 >
-                  {match.status === "suggested" ? "New Lead" : match.status}
+                  {match.status === "suggested" ? "New Like" : match.status}
                 </Badge>
               </div>
             </div>
@@ -249,7 +249,7 @@ function LeadCard({
                     data-testid={`button-accept-${match.id}`}
                   >
                     <Check className="w-4 h-4 mr-1" />
-                    Accept Lead
+                    Accept Like
                   </Button>
                   <Button 
                     size="sm" 
@@ -512,7 +512,7 @@ export default function PartnerDashboard() {
     refetchInterval: 5000,
   });
 
-  const newLeads = matches.filter(m => m.status === "suggested" || (!m.partnerAccepted && m.clientLiked));
+  const newLikes = matches.filter(m => m.status === "suggested" || (!m.partnerAccepted && m.clientLiked));
   const activeMatches = matches.filter(m => m.partnerAccepted);
   const mutualMatches = matches.filter(m => m.partnerAccepted && m.clientLiked);
 
@@ -537,8 +537,8 @@ export default function PartnerDashboard() {
         recordSwipe(true);
         recordMatch();
         toast({
-          title: "Lead Accepted",
-          description: "You've accepted this lead. The client will be notified.",
+          title: "Like Accepted",
+          description: "You've accepted this like. The client will be notified.",
         });
       }
       queryClient.invalidateQueries({ queryKey: ["/api/matches/partner", partnerId] });
@@ -608,14 +608,14 @@ export default function PartnerDashboard() {
     navigate("/");
   };
 
-  const handleAcceptLead = (matchId: string) => {
+  const handleAcceptLike = (matchId: string) => {
     updateMatchMutation.mutate({
       matchId,
       data: { partnerAccepted: true, partnerResponded: true, status: "accepted" },
     });
   };
 
-  const handleDeclineLead = (matchId: string) => {
+  const handleDeclineLike = (matchId: string) => {
     updateMatchMutation.mutate({
       matchId,
       data: { partnerAccepted: false, partnerResponded: true, status: "rejected" },
@@ -710,8 +710,8 @@ export default function PartnerDashboard() {
 
   const navItems = [
     { id: "overview", label: "Overview", icon: Home },
-    { id: "swipe", label: "Find Clients", icon: Search, badge: newLeads.length },
-    { id: "leads", label: "New Leads", icon: Inbox, badge: newLeads.length },
+    { id: "swipe", label: "Find Clients", icon: Search, badge: newLikes.length },
+    { id: "likes", label: "New Likes", icon: Inbox, badge: newLikes.length },
     { id: "matches", label: "Active Matches", icon: Users, badge: mutualMatches.length },
     { id: "messages", label: "Messages", icon: MessageCircle },
     { id: "profile", label: "My Profile", icon: User },
@@ -889,7 +889,7 @@ export default function PartnerDashboard() {
               <div>
                 <h1 className="text-xl font-bold">Partner Dashboard</h1>
                 <p className="text-sm text-muted-foreground">
-                  {newLeads.length} new leads | {mutualMatches.length} active matches
+                  {newLikes.length} new likes | {mutualMatches.length} active matches
                 </p>
               </div>
             </div>
@@ -912,8 +912,8 @@ export default function PartnerDashboard() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <StatCard
                     icon={Inbox}
-                    label="New Leads"
-                    value={newLeads.length}
+                    label="New Likes"
+                    value={newLikes.length}
                     subtext="Awaiting your response"
                     color="orange"
                   />
@@ -935,7 +935,7 @@ export default function PartnerDashboard() {
                     icon={TrendingUp}
                     label="Conversion"
                     value={`${conversionRate}%`}
-                    subtext="Lead to match rate"
+                    subtext="Like to match rate"
                     color="purple"
                   />
                 </div>
@@ -945,19 +945,19 @@ export default function PartnerDashboard() {
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base flex items-center gap-2">
                         <Inbox className="w-4 h-4" />
-                        Recent Leads
+                        Recent Likes
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {newLeads.length === 0 ? (
+                      {newLikes.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                           <Inbox className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                          <p>No new leads at the moment</p>
+                          <p>No new likes at the moment</p>
                           <p className="text-sm">Check back soon</p>
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          {newLeads.slice(0, 3).map((match) => (
+                          {newLikes.slice(0, 3).map((match) => (
                             <div 
                               key={match.id} 
                               className="flex items-center gap-3 p-2 rounded-md hover-elevate cursor-pointer"
@@ -975,13 +975,13 @@ export default function PartnerDashboard() {
                               )}
                             </div>
                           ))}
-                          {newLeads.length > 3 && (
+                          {newLikes.length > 3 && (
                             <Button 
                               variant="ghost" 
                               className="w-full"
-                              onClick={() => setActiveTab("leads")}
+                              onClick={() => setActiveTab("likes")}
                             >
-                              View all {newLeads.length} leads
+                              View all {newLikes.length} likes
                               <ArrowRight className="w-4 h-4 ml-2" />
                             </Button>
                           )}
@@ -1002,7 +1002,7 @@ export default function PartnerDashboard() {
                         <div className="text-center py-8 text-muted-foreground">
                           <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
                           <p>No active matches yet</p>
-                          <p className="text-sm">Accept leads to get matched</p>
+                          <p className="text-sm">Accept likes to get matched</p>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -1045,33 +1045,33 @@ export default function PartnerDashboard() {
                   </Card>
                 </div>
               </div>
-            ) : activeTab === "leads" ? (
+            ) : activeTab === "likes" ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold">New Leads</h2>
+                    <h2 className="text-2xl font-bold">New Likes</h2>
                     <p className="text-muted-foreground">
-                      {newLeads.length} potential clients waiting for your response
+                      {newLikes.length} potential clients waiting for your response
                     </p>
                   </div>
                 </div>
                 
-                {newLeads.length === 0 ? (
+                {newLikes.length === 0 ? (
                   <Card className="p-12 text-center">
                     <Inbox className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                    <h3 className="text-lg font-semibold mb-2">No new leads</h3>
+                    <h3 className="text-lg font-semibold mb-2">No new likes</h3>
                     <p className="text-muted-foreground">
                       When clients match with your profile, they'll appear here.
                     </p>
                   </Card>
                 ) : (
                   <div className="space-y-4">
-                    {newLeads.map((match) => (
-                      <LeadCard
+                    {newLikes.map((match) => (
+                      <LikeCard
                         key={match.id}
                         match={match}
-                        onAccept={handleAcceptLead}
-                        onDecline={handleDeclineLead}
+                        onAccept={handleAcceptLike}
+                        onDecline={handleDeclineLike}
                         onViewDetails={handleViewDetails}
                         isPending={updateMatchMutation.isPending}
                       />
@@ -1095,13 +1095,13 @@ export default function PartnerDashboard() {
                     <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
                     <h3 className="text-lg font-semibold mb-2">No active matches</h3>
                     <p className="text-muted-foreground">
-                      Accept leads to start building your pipeline.
+                      Accept likes to start building your pipeline.
                     </p>
                     <Button 
                       className="mt-4" 
-                      onClick={() => setActiveTab("leads")}
+                      onClick={() => setActiveTab("likes")}
                     >
-                      View Leads
+                      View Likes
                     </Button>
                   </Card>
                 ) : (
@@ -1173,7 +1173,7 @@ export default function PartnerDashboard() {
       <Sheet open={showMatchSheet} onOpenChange={setShowMatchSheet}>
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Lead Details</SheetTitle>
+            <SheetTitle>Like Details</SheetTitle>
             <SheetDescription>
               View complete information about this opportunity
             </SheetDescription>
@@ -1317,16 +1317,16 @@ export default function PartnerDashboard() {
                   <>
                     <Button 
                       className="flex-1" 
-                      onClick={() => handleAcceptLead(selectedMatch.id)}
+                      onClick={() => handleAcceptLike(selectedMatch.id)}
                       disabled={updateMatchMutation.isPending}
                     >
                       <Check className="w-4 h-4 mr-2" />
-                      Accept Lead
+                      Accept Like
                     </Button>
                     <Button 
                       variant="outline" 
                       className="flex-1"
-                      onClick={() => handleDeclineLead(selectedMatch.id)}
+                      onClick={() => handleDeclineLike(selectedMatch.id)}
                       disabled={updateMatchMutation.isPending}
                     >
                       <X className="w-4 h-4 mr-2" />
