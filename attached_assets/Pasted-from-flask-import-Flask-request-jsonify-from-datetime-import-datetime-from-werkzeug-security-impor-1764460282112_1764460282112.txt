@@ -1,0 +1,172 @@
+from flask import Flask, request, jsonify
+from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+
+app = Flask(__name__)
+
+# -----------------------
+# In-memory databases
+# -----------------------
+client_tickets_db = {}       # {email: [tickets]}
+partner_tickets_db = {}      # {email: [tickets]}
+admin_tickets_db = {}        # {ticket_id: ticket_data}
+
+# User database
+users_db = {
+    # email: {type, password_hash, details}
+    "bauweraerts.rune@gmail.com": {
+        "type": "client",
+        "password_hash": generate_password_hash("clientpass"),
+        "details": {
+            "description": "Client description",
+            "goals": "Client goals",
+            "industry": "Client industry"
+        }
+    },
+    "partner1@example.com": {
+        "type": "partner",
+        "password_hash": generate_password_hash("partnerpass"),
+        "details": {
+            "description": "Partner description",
+            "goals": "Partner goals",
+            "industry": "Partner industry"
+        }
+    },
+    "rune.meestercopper@gmail.com": {
+        "type": "admin",
+        "password_hash": generate_password_hash("adminpass"),
+        "details": {
+            "description": "Admin description",
+            "goals": "Admin goals",
+            "industry": "Admin industry"
+        }
+    }
+}
+
+# -----------------------
+# Helper functions
+# -----------------------
+def save_to_admin(ticket_data):
+    ticket_id = len(admin_tickets_db) + 1
+    admin_tickets_db[ticket_id] = ticket_data
+    print(f"Ticket sent to admin pipeline: {ticket_data}")
+    return ticket_id
+
+def push_reply_to_user(ticket, reply_message, admin_email):
+    creator_email = ticket["creator_email"]
+    reply_obj = {
+        "sender": admin_email,
+        "message": reply_message,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+    # Add message to the ticket itself
+    ticket["messages"].append(reply_obj)
+
+    # Push to creator's dashboard
+    if creator_email in client_tickets_db:
+        client_tickets_db[creator_email][-1]["messages"].append(reply_obj)
+    elif creator_email in partner_tickets_db:
+        partner_tickets_db[creator_email][-1]["messages"].append(reply_obj)
+
+# -----------------------
+# Ticket endpoints
+# -----------------------
+@app.route("/create_ticket", methods=["POST"])
+def create_ticket():
+    data = request.json
+    user_email = data.get("user_email")
+    dashboard_type = data.get("dashboard_type")  # "client" or "partner"
+    issue = data.get("issue")
+
+    if user_email not in users_db or users_db[user_email]["type"] != dashboard_type:
+        return jsonify({"error": "Invalid user"}), 400
+
+    ticket = {
+        "creator_email": user_email,
+        "issue": issue,
+        "status": "Incoming",  # default stage
+        "timestamp": datetime.utcnow().isoformat(),
+        "messages": []
+    }
+
+    # Save to creator's dashboard
+    if dashboard_type == "client":
+        client_tickets_db.setdefault(user_email, []).append(ticket)
+    elif dashboard_type == "partner":
+        partner_tickets_db.setdefault(user_email, []).append(ticket)
+
+    # Save to shared admin pipeline
+    save_to_admin(ticket)
+
+    return jsonify({"message": "Ticket created successfully", "ticket": ticket}), 201
+
+@app.route("/admin_reply/<int:ticket_id>", methods=["POST"])
+def admin_reply(ticket_id):
+    data = request.json
+    reply_message = data.get("message")
+    admin_email = data.get("admin_email")
+    new_status = data.get("status")  # optional: change ticket stage
+
+    if admin_email not in users_db or users_db[admin_email]["type"] != "admin":
+        return jsonify({"error": "Invalid admin"}), 400
+
+    if ticket_id not in admin_tickets_db:
+        return jsonify({"error": "Ticket not found"}), 404
+
+    ticket = admin_tickets_db[ticket_id]
+
+    # Update ticket stage if provided
+    if new_status:
+        ticket["status"] = new_status
+
+    # Push reply back to client/partner dashboard
+    push_reply_to_user(ticket, reply_message, admin_email)
+
+    return jsonify({"message": "Reply sent and ticket updated"}), 200
+
+# -----------------------
+# View tickets
+# -----------------------
+@app.route("/admin_tickets", methods=["GET"])
+def view_admin_tickets():
+    return jsonify(admin_tickets_db)
+
+@app.route("/client_tickets/<string:user_email>", methods=["GET"])
+def view_client_tickets(user_email):
+    return jsonify(client_tickets_db.get(user_email, []))
+
+@app.route("/partner_tickets/<string:user_email>", methods=["GET"])
+def view_partner_tickets(user_email):
+    return jsonify(partner_tickets_db.get(user_email, []))
+
+# -----------------------
+# User settings endpoints
+# -----------------------
+@app.route("/user_settings/<string:user_email>", methods=["GET"])
+def get_user_settings(user_email):
+    if user_email not in users_db:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify(users_db[user_email]["details"])
+
+@app.route("/user_settings/<string:user_email>", methods=["POST"])
+def update_user_settings(user_email):
+    if user_email not in users_db:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.json
+    # Update details
+    users_db[user_email]["details"].update(data.get("details", {}))
+
+    # Update password if provided
+    new_password = data.get("password")
+    if new_password:
+        users_db[user_email]["password_hash"] = generate_password_hash(new_password)
+
+    return jsonify({"message": "Settings updated successfully"}), 200
+
+# -----------------------
+# Run app
+# -----------------------
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=3000, debug=True)
