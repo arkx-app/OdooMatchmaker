@@ -565,6 +565,17 @@ export default function ClientDashboard() {
     }
   }, [authLoading, isAuthenticated, user?.role, navigate]);
 
+  // Redirect to swipe page on first session load - swiping is the primary feature
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && user?.profile) {
+      const hasVisitedDashboard = sessionStorage.getItem("client_dashboard_visited");
+      if (!hasVisitedDashboard) {
+        sessionStorage.setItem("client_dashboard_visited", "true");
+        navigate("/client/swipe");
+      }
+    }
+  }, [authLoading, isAuthenticated, user?.profile, navigate]);
+
   const handleLogout = async () => {
     await logout();
     localStorage.removeItem("profile");
@@ -589,6 +600,12 @@ export default function ClientDashboard() {
 
   const { data: briefsData } = useQuery<{ briefs: Brief[] }>({
     queryKey: ["/api/my/briefs"],
+  });
+
+  // Fetch support ticket notifications
+  const { data: ticketNotifications } = useQuery<{ count: number; ticketIds: string[] }>({
+    queryKey: ["/api/tickets/notifications"],
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const briefs = briefsData?.briefs || [];
@@ -766,6 +783,8 @@ export default function ClientDashboard() {
     "--sidebar-width-icon": "3rem",
   };
 
+  const supportNotificationCount = ticketNotifications?.count || 0;
+  
   const navItems = [
     { id: "overview", label: "Overview", icon: Home },
     { id: "projects", label: "My Projects", icon: Briefcase },
@@ -774,7 +793,7 @@ export default function ClientDashboard() {
     { id: "saved", label: "Saved Partners", icon: Bookmark, count: savedPartners.length },
     { id: "matches", label: "Matches", icon: Users, count: confirmedMatches.length },
     { id: "messages", label: "Messages", icon: MessageCircle },
-    { id: "support", label: "Support", icon: HelpCircle },
+    { id: "support", label: "Support", icon: HelpCircle, count: supportNotificationCount, isNotification: true },
     { id: "learn", label: "Learn Odoo", icon: BookOpen },
     { id: "settings", label: "Settings", icon: Settings },
   ];
@@ -809,7 +828,10 @@ export default function ClientDashboard() {
                         <item.icon className="w-4 h-4" />
                         <span>{item.label}</span>
                         {item.count !== undefined && item.count > 0 && (
-                          <Badge variant="secondary" className="ml-auto text-xs">
+                          <Badge 
+                            variant={item.isNotification ? "destructive" : "secondary"} 
+                            className="ml-auto text-xs"
+                          >
                             {item.count}
                           </Badge>
                         )}

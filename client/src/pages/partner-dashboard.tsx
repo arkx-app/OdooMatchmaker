@@ -516,6 +516,17 @@ export default function PartnerDashboard() {
     }
   }, [userLoading, currentUser, navigate]);
 
+  // Redirect to swipe page on first session load - swiping is the primary feature
+  useEffect(() => {
+    if (!userLoading && currentUser && partnerProfile) {
+      const hasVisitedDashboard = sessionStorage.getItem("partner_dashboard_visited");
+      if (!hasVisitedDashboard) {
+        sessionStorage.setItem("partner_dashboard_visited", "true");
+        navigate("/partner/swipe");
+      }
+    }
+  }, [userLoading, currentUser, partnerProfile, navigate]);
+
   useEffect(() => {
     if (partnerProfile?.id) {
       setProfileForm({
@@ -571,6 +582,12 @@ export default function PartnerDashboard() {
     queryKey: ["/api/partner/sales-opportunities"],
     enabled: !!partnerId,
     refetchInterval: 10000,
+  });
+
+  // Fetch support ticket notifications
+  const { data: ticketNotifications } = useQuery<{ count: number; ticketIds: string[] }>({
+    queryKey: ["/api/tickets/notifications"],
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const updateMatchMutation = useMutation({
@@ -831,6 +848,8 @@ export default function PartnerDashboard() {
     "--sidebar-width-icon": "3rem",
   };
 
+  const supportNotificationCount = ticketNotifications?.count || 0;
+  
   const navItems = [
     { id: "overview", label: "Overview", icon: Home },
     { id: "swipe", label: "Find Clients", icon: Search, badge: newLikes.length },
@@ -839,7 +858,7 @@ export default function PartnerDashboard() {
     { id: "messages", label: "Messages", icon: MessageCircle },
     { id: "service-tickets", label: "Service Tickets", icon: Ticket },
     { id: "sales-pipeline", label: "Sales Pipeline", icon: PiggyBank },
-    { id: "support", label: "Support", icon: HelpCircle },
+    { id: "support", label: "Support", icon: HelpCircle, badge: supportNotificationCount, isNotification: true },
     { id: "profile", label: "My Profile", icon: User },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
   ];
@@ -927,7 +946,10 @@ export default function PartnerDashboard() {
                         <item.icon className="w-4 h-4" />
                         <span>{item.label}</span>
                         {item.badge !== undefined && item.badge > 0 && (
-                          <Badge variant="secondary" className="ml-auto text-xs">
+                          <Badge 
+                            variant={item.isNotification ? "destructive" : "secondary"} 
+                            className="ml-auto text-xs"
+                          >
                             {item.badge}
                           </Badge>
                         )}
