@@ -652,9 +652,6 @@ export default function ClientDashboard() {
   const savedPartners = realSavedPartners.length > 0 ? realSavedPartners : sampleSavedMatches;
   const confirmedMatches = realConfirmedMatches.length > 0 ? realConfirmedMatches : sampleConfirmedMatches;
 
-  // Free tier limit for premium feature
-  const FREE_LIKES_LIMIT = 3;
-
   const applyFilters = (matches: EnrichedMatch[]) => {
     return matches.filter(m => {
       if (!m.partner) return false;
@@ -1148,9 +1145,8 @@ export default function ClientDashboard() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">
-                      {Math.min(filteredLiked.length, FREE_LIKES_LIMIT)} of {filteredLiked.length} visible
+                      {filteredLiked.length} partners
                     </Badge>
-                    <Badge variant="secondary" className="text-xs">Free Tier</Badge>
                   </div>
                 </div>
 
@@ -1173,91 +1169,23 @@ export default function ClientDashboard() {
                     )}
                   </Card>
                 ) : (
-                  <>
-                    {/* Visible likes within free tier */}
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {filteredLiked.slice(0, FREE_LIKES_LIMIT).map((match) => (
-                        match.partner && (
-                          <EnhancedPartnerCard
-                            key={match.id}
-                            partner={match.partner}
-                            match={match}
-                            onSave={handleSave}
-                            onMessage={handleMessage}
-                            onRequestProposal={handleRequestProposal}
-                            onBookCall={handleBookCall}
-                            onViewProfile={handleViewProfile}
-                            isSaving={saveMutation.isPending}
-                          />
-                        )
-                      ))}
-                    </div>
-
-                    {/* Premium upgrade prompt if there are more likes */}
-                    {filteredLiked.length > FREE_LIKES_LIMIT && (
-                      <>
-                        <Card className="p-6 bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-rose-500/10 border-amber-500/30">
-                          <div className="flex items-center justify-between flex-wrap gap-4">
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                                <Crown className="w-6 h-6 text-white" />
-                              </div>
-                              <div>
-                                <h4 className="font-semibold">Unlock All Your Matches</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  {filteredLiked.length - FREE_LIKES_LIMIT} more partners are interested in working with you
-                                </p>
-                              </div>
-                            </div>
-                            <Button 
-                              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white"
-                              data-testid="button-upgrade-premium-liked"
-                              onClick={() => navigate("/client/pricing")}
-                            >
-                              <Zap className="w-4 h-4 mr-2" />
-                              Upgrade to Premium
-                            </Button>
-                          </div>
-                        </Card>
-
-                        {/* Blurred/locked likes */}
-                        <div className="grid gap-4 md:grid-cols-2">
-                          {filteredLiked.slice(FREE_LIKES_LIMIT).map((match) => (
-                            match.partner && (
-                              <Card key={match.id} className="relative overflow-hidden" data-testid={`locked-partner-${match.id}`}>
-                                {/* Blur overlay */}
-                                <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex items-center justify-center">
-                                  <div className="text-center p-4">
-                                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-2">
-                                      <Lock className="w-6 h-6 text-muted-foreground" />
-                                    </div>
-                                    <p className="font-medium text-sm">Premium Only</p>
-                                    <p className="text-xs text-muted-foreground">Upgrade to view this partner</p>
-                                  </div>
-                                </div>
-                                {/* Blurred content preview */}
-                                <CardContent className="p-4 opacity-50">
-                                  <div className="flex items-start gap-3">
-                                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-partner-from to-partner-to flex items-center justify-center text-white font-bold">
-                                      {match.partner.company?.charAt(0) || "?"}
-                                    </div>
-                                    <div className="flex-1">
-                                      <h3 className="font-semibold">{match.partner.company}</h3>
-                                      <p className="text-sm text-muted-foreground">{match.partner.industry}</p>
-                                      <div className="flex items-center gap-1 mt-1">
-                                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                                        <span className="text-xs">{match.partner.rating}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            )
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {filteredLiked.map((match) => (
+                      match.partner && (
+                        <EnhancedPartnerCard
+                          key={match.id}
+                          partner={match.partner}
+                          match={match}
+                          onSave={handleSave}
+                          onMessage={handleMessage}
+                          onRequestProposal={handleRequestProposal}
+                          onBookCall={handleBookCall}
+                          onViewProfile={handleViewProfile}
+                          isSaving={saveMutation.isPending}
+                        />
+                      )
+                    ))}
+                  </div>
                 )}
               </div>
             )}
