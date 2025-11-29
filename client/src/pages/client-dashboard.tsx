@@ -72,6 +72,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SupportFormSheet } from "@/components/support-form";
+import { HelpdeskSection } from "@/components/helpdesk-section";
 import { useAuth } from "@/hooks/useAuth";
 import { useGamification } from "@/hooks/use-gamification";
 import { AchievementsList } from "@/components/achievement-badge";
@@ -773,6 +774,7 @@ export default function ClientDashboard() {
     { id: "saved", label: "Saved Partners", icon: Bookmark, count: savedPartners.length },
     { id: "matches", label: "Matches", icon: Users, count: confirmedMatches.length },
     { id: "messages", label: "Messages", icon: MessageCircle },
+    { id: "support", label: "Support", icon: HelpCircle },
     { id: "learn", label: "Learn Odoo", icon: BookOpen },
     { id: "settings", label: "Settings", icon: Settings },
   ];
@@ -835,26 +837,6 @@ export default function ClientDashboard() {
                         {stats.totalPoints}
                       </Badge>
                     </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-            <SidebarGroup>
-              <SidebarGroupLabel>Support</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SupportFormSheet 
-                      userEmail={user?.email || undefined}
-                      userName={`${user?.firstName} ${user?.lastName}`}
-                      userType="client"
-                      trigger={
-                        <SidebarMenuButton data-testid="nav-support">
-                          <HelpCircle className="w-4 h-4" />
-                          <span>Get Help</span>
-                        </SidebarMenuButton>
-                      }
-                    />
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -1430,6 +1412,10 @@ export default function ClientDashboard() {
                   </CardContent>
                 </Card>
               </div>
+            )}
+
+            {activeSection === "support" && (
+              <HelpdeskSection userType="client" />
             )}
 
             {activeSection === "settings" && (

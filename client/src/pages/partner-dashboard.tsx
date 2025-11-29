@@ -71,6 +71,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SupportFormSheet } from "@/components/support-form";
+import { HelpdeskSection } from "@/components/helpdesk-section";
 import { useAuth } from "@/hooks/useAuth";
 import { useGamification } from "@/hooks/use-gamification";
 import { AchievementsList } from "@/components/achievement-badge";
@@ -838,6 +839,7 @@ export default function PartnerDashboard() {
     { id: "messages", label: "Messages", icon: MessageCircle },
     { id: "service-tickets", label: "Service Tickets", icon: Ticket },
     { id: "sales-pipeline", label: "Sales Pipeline", icon: PiggyBank },
+    { id: "support", label: "Support", icon: HelpCircle },
     { id: "profile", label: "My Profile", icon: User },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
   ];
@@ -951,27 +953,6 @@ export default function PartnerDashboard() {
                         {gamificationStats.totalPoints} pts
                       </Badge>
                     </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-
-            <SidebarGroup>
-              <SidebarGroupLabel>Support</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SupportFormSheet 
-                      userEmail={partnerProfile?.email}
-                      userName={partnerProfile?.name || `${currentUser?.firstName} ${currentUser?.lastName}`}
-                      userType="partner"
-                      trigger={
-                        <SidebarMenuButton data-testid="nav-support">
-                          <HelpCircle className="w-4 h-4" />
-                          <span>Get Help</span>
-                        </SidebarMenuButton>
-                      }
-                    />
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -1527,6 +1508,8 @@ export default function PartnerDashboard() {
                   </div>
                 )}
               </div>
+            ) : activeTab === "support" ? (
+              <HelpdeskSection userType="partner" />
             ) : null}
           </main>
         </div>
