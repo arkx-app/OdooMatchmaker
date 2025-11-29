@@ -6,7 +6,9 @@ import {
   insertPartnerSchema, insertClientSchema, insertMatchSchema,
   insertBriefSchema, insertMessageSchema, insertProjectSchema,
   updateMatchSchema, insertSupportTicketSchema, updateSupportTicketSchema,
-  insertTicketCommentSchema
+  insertTicketCommentSchema, insertPartnerServiceTicketSchema, 
+  updatePartnerServiceTicketSchema, insertPartnerServiceTicketNoteSchema,
+  insertPartnerSalesOpportunitySchema, updatePartnerSalesOpportunitySchema
 } from "@shared/schema";
 import { seedPartners, seedBriefsForClient } from "./seed-data";
 
@@ -870,6 +872,280 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching stats:", error);
       res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  // ========== PARTNER SERVICE TICKET ROUTES ==========
+
+  // Helper to verify partner ownership
+  async function getPartnerFromUser(req: Request): Promise<{ partnerId: string } | null> {
+    const userId = getCurrentUserId(req);
+    if (!userId) return null;
+    const partner = await storage.getPartnerByUserId(userId);
+    return partner ? { partnerId: partner.id } : null;
+  }
+
+  // Get all service tickets for a partner
+  app.get("/api/partner/service-tickets", isAuthenticated, async (req, res) => {
+    try {
+      const partnerInfo = await getPartnerFromUser(req);
+      if (!partnerInfo) {
+        return res.status(403).json({ message: "Partner profile not found" });
+      }
+      const tickets = await storage.getPartnerServiceTickets(partnerInfo.partnerId);
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching service tickets:", error);
+      res.status(500).json({ message: "Failed to fetch service tickets" });
+    }
+  });
+
+  // Create a service ticket
+  app.post("/api/partner/service-tickets", isAuthenticated, async (req, res) => {
+    try {
+      const partnerInfo = await getPartnerFromUser(req);
+      if (!partnerInfo) {
+        return res.status(403).json({ message: "Partner profile not found" });
+      }
+
+      const result = insertPartnerServiceTicketSchema.safeParse({
+        ...req.body,
+        partnerId: partnerInfo.partnerId,
+      });
+      
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid ticket data", errors: result.error.flatten() });
+      }
+
+      const ticket = await storage.createPartnerServiceTicket(result.data);
+      res.status(201).json(ticket);
+    } catch (error) {
+      console.error("Error creating service ticket:", error);
+      res.status(500).json({ message: "Failed to create service ticket" });
+    }
+  });
+
+  // Get a single service ticket
+  app.get("/api/partner/service-tickets/:id", isAuthenticated, async (req, res) => {
+    try {
+      const partnerInfo = await getPartnerFromUser(req);
+      if (!partnerInfo) {
+        return res.status(403).json({ message: "Partner profile not found" });
+      }
+
+      const ticket = await storage.getPartnerServiceTicket(req.params.id);
+      if (!ticket || ticket.partnerId !== partnerInfo.partnerId) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error fetching service ticket:", error);
+      res.status(500).json({ message: "Failed to fetch service ticket" });
+    }
+  });
+
+  // Update a service ticket
+  app.patch("/api/partner/service-tickets/:id", isAuthenticated, async (req, res) => {
+    try {
+      const partnerInfo = await getPartnerFromUser(req);
+      if (!partnerInfo) {
+        return res.status(403).json({ message: "Partner profile not found" });
+      }
+
+      // Verify ownership
+      const existingTicket = await storage.getPartnerServiceTicket(req.params.id);
+      if (!existingTicket || existingTicket.partnerId !== partnerInfo.partnerId) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      const result = updatePartnerServiceTicketSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid update data", errors: result.error.flatten() });
+      }
+
+      const ticket = await storage.updatePartnerServiceTicket(req.params.id, result.data);
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error updating service ticket:", error);
+      res.status(500).json({ message: "Failed to update service ticket" });
+    }
+  });
+
+  // Get service ticket notes
+  app.get("/api/partner/service-tickets/:id/notes", isAuthenticated, async (req, res) => {
+    try {
+      const partnerInfo = await getPartnerFromUser(req);
+      if (!partnerInfo) {
+        return res.status(403).json({ message: "Partner profile not found" });
+      }
+
+      // Verify ownership
+      const ticket = await storage.getPartnerServiceTicket(req.params.id);
+      if (!ticket || ticket.partnerId !== partnerInfo.partnerId) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      const notes = await storage.getPartnerServiceTicketNotes(req.params.id);
+      notes.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      });
+      res.json(notes);
+    } catch (error) {
+      console.error("Error fetching notes:", error);
+      res.status(500).json({ message: "Failed to fetch notes" });
+    }
+  });
+
+  // Add a note to a service ticket
+  app.post("/api/partner/service-tickets/:id/notes", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const partnerInfo = await getPartnerFromUser(req);
+      if (!partnerInfo || !userId) {
+        return res.status(403).json({ message: "Partner profile not found" });
+      }
+
+      // Verify ownership
+      const ticket = await storage.getPartnerServiceTicket(req.params.id);
+      if (!ticket || ticket.partnerId !== partnerInfo.partnerId) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      const user = await storage.getUser(userId);
+      const result = insertPartnerServiceTicketNoteSchema.safeParse({
+        ...req.body,
+        ticketId: req.params.id,
+        userId: userId,
+        userName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'Unknown',
+      });
+
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid note data", errors: result.error.flatten() });
+      }
+
+      const note = await storage.createPartnerServiceTicketNote(result.data);
+      res.status(201).json(note);
+    } catch (error) {
+      console.error("Error creating note:", error);
+      res.status(500).json({ message: "Failed to create note" });
+    }
+  });
+
+  // ========== PARTNER SALES OPPORTUNITY ROUTES ==========
+
+  // Get all sales opportunities for a partner
+  app.get("/api/partner/sales-opportunities", isAuthenticated, async (req, res) => {
+    try {
+      const partnerInfo = await getPartnerFromUser(req);
+      if (!partnerInfo) {
+        return res.status(403).json({ message: "Partner profile not found" });
+      }
+      const opportunities = await storage.getPartnerSalesOpportunities(partnerInfo.partnerId);
+      res.json(opportunities);
+    } catch (error) {
+      console.error("Error fetching sales opportunities:", error);
+      res.status(500).json({ message: "Failed to fetch sales opportunities" });
+    }
+  });
+
+  // Create a sales opportunity
+  app.post("/api/partner/sales-opportunities", isAuthenticated, async (req, res) => {
+    try {
+      const partnerInfo = await getPartnerFromUser(req);
+      if (!partnerInfo) {
+        return res.status(403).json({ message: "Partner profile not found" });
+      }
+
+      const result = insertPartnerSalesOpportunitySchema.safeParse({
+        ...req.body,
+        partnerId: partnerInfo.partnerId,
+      });
+
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid opportunity data", errors: result.error.flatten() });
+      }
+
+      const opportunity = await storage.createPartnerSalesOpportunity(result.data);
+      res.status(201).json(opportunity);
+    } catch (error) {
+      console.error("Error creating sales opportunity:", error);
+      res.status(500).json({ message: "Failed to create sales opportunity" });
+    }
+  });
+
+  // Get a single sales opportunity
+  app.get("/api/partner/sales-opportunities/:id", isAuthenticated, async (req, res) => {
+    try {
+      const partnerInfo = await getPartnerFromUser(req);
+      if (!partnerInfo) {
+        return res.status(403).json({ message: "Partner profile not found" });
+      }
+
+      const opportunity = await storage.getPartnerSalesOpportunity(req.params.id);
+      if (!opportunity || opportunity.partnerId !== partnerInfo.partnerId) {
+        return res.status(404).json({ message: "Opportunity not found" });
+      }
+
+      res.json(opportunity);
+    } catch (error) {
+      console.error("Error fetching sales opportunity:", error);
+      res.status(500).json({ message: "Failed to fetch sales opportunity" });
+    }
+  });
+
+  // Update a sales opportunity
+  app.patch("/api/partner/sales-opportunities/:id", isAuthenticated, async (req, res) => {
+    try {
+      const partnerInfo = await getPartnerFromUser(req);
+      if (!partnerInfo) {
+        return res.status(403).json({ message: "Partner profile not found" });
+      }
+
+      // Verify ownership
+      const existingOpportunity = await storage.getPartnerSalesOpportunity(req.params.id);
+      if (!existingOpportunity || existingOpportunity.partnerId !== partnerInfo.partnerId) {
+        return res.status(404).json({ message: "Opportunity not found" });
+      }
+
+      const result = updatePartnerSalesOpportunitySchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid update data", errors: result.error.flatten() });
+      }
+
+      // If moving to won/lost, set closedAt
+      const updates: any = { ...result.data };
+      if ((result.data.stage === 'won' || result.data.stage === 'lost') && !existingOpportunity.closedAt) {
+        updates.closedAt = new Date();
+      }
+
+      const opportunity = await storage.updatePartnerSalesOpportunity(req.params.id, updates);
+      res.json(opportunity);
+    } catch (error) {
+      console.error("Error updating sales opportunity:", error);
+      res.status(500).json({ message: "Failed to update sales opportunity" });
+    }
+  });
+
+  // Check/Get existing opportunity by match ID (useful to avoid duplicates)
+  app.get("/api/partner/sales-opportunities/by-match/:matchId", isAuthenticated, async (req, res) => {
+    try {
+      const partnerInfo = await getPartnerFromUser(req);
+      if (!partnerInfo) {
+        return res.status(403).json({ message: "Partner profile not found" });
+      }
+
+      const opportunity = await storage.getPartnerSalesOpportunityByMatch(partnerInfo.partnerId, req.params.matchId);
+      if (!opportunity) {
+        return res.status(404).json({ message: "No opportunity found for this match" });
+      }
+
+      res.json(opportunity);
+    } catch (error) {
+      console.error("Error fetching opportunity by match:", error);
+      res.status(500).json({ message: "Failed to fetch opportunity" });
     }
   });
 
