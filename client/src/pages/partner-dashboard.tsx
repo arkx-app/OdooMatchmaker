@@ -10,7 +10,9 @@ import {
   Zap, TrendingUp, BarChart3, Target, Layers, ArrowRight,
   Edit, Plus, ExternalLink, Mail, Phone, MapPin, BadgeCheck,
   User, Send, StickyNote, Calculator, Save, Eye, XCircle,
-  Inbox, Check
+  Inbox, Check, Ticket, PiggyBank, CircleDot, CircleCheck,
+  AlertTriangle, Play, CircleX, CircleDollarSign, Handshake,
+  Trophy, Percent, GripVertical
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -74,7 +76,7 @@ import { useGamification } from "@/hooks/use-gamification";
 import { AchievementsList } from "@/components/achievement-badge";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Partner, Match, Client, Brief, Message } from "@shared/schema";
+import type { Partner, Match, Client, Brief, Message, PartnerServiceTicket, PartnerSalesOpportunity, PartnerServiceTicketNote } from "@shared/schema";
 
 interface EnrichedMatch extends Match {
   client?: Client;
@@ -430,6 +432,34 @@ export default function PartnerDashboard() {
     website: "",
   });
 
+  // Pipeline state
+  const [showServiceTicketDialog, setShowServiceTicketDialog] = useState(false);
+  const [showSalesOpportunityDialog, setShowSalesOpportunityDialog] = useState(false);
+  const [selectedServiceTicket, setSelectedServiceTicket] = useState<PartnerServiceTicket | null>(null);
+  const [selectedSalesOpportunity, setSelectedSalesOpportunity] = useState<PartnerSalesOpportunity | null>(null);
+  const [ticketNotes, setTicketNotes] = useState<PartnerServiceTicketNote[]>([]);
+  const [newTicketNote, setNewTicketNote] = useState("");
+
+  const [serviceTicketForm, setServiceTicketForm] = useState({
+    title: "",
+    description: "",
+    category: "general",
+    priority: "medium",
+    matchId: "",
+    projectId: "",
+    clientName: "",
+  });
+
+  const [salesOpportunityForm, setSalesOpportunityForm] = useState({
+    matchId: "",
+    clientName: "",
+    projectTitle: "",
+    expectedRevenue: "",
+    probability: "50",
+    expectedCloseDate: "",
+    notes: "",
+  });
+
   // Fetch current user and partner profile from API
   const { data: currentUser, isLoading: userLoading, error: userError } = useQuery<{
     id: string;
@@ -528,6 +558,20 @@ export default function PartnerDashboard() {
     refetchInterval: 3000,
   });
 
+  // Partner Service Tickets
+  const { data: serviceTickets = [], isLoading: serviceTicketsLoading } = useQuery<PartnerServiceTicket[]>({
+    queryKey: ["/api/partner/service-tickets"],
+    enabled: !!partnerId,
+    refetchInterval: 10000,
+  });
+
+  // Partner Sales Opportunities
+  const { data: salesOpportunities = [], isLoading: salesOpportunitiesLoading } = useQuery<PartnerSalesOpportunity[]>({
+    queryKey: ["/api/partner/sales-opportunities"],
+    enabled: !!partnerId,
+    refetchInterval: 10000,
+  });
+
   const updateMatchMutation = useMutation({
     mutationFn: async ({ matchId, data }: { matchId: string; data: any }) => {
       const res = await apiRequest("PATCH", `/api/matches/${matchId}`, data);
@@ -590,6 +634,83 @@ export default function PartnerDashboard() {
         description: "Failed to update profile. Please try again.",
         variant: "destructive",
       });
+    },
+  });
+
+  // Service Ticket Mutations
+  const createServiceTicketMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/partner/service-tickets", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/service-tickets"] });
+      toast({ title: "Ticket Created", description: "Service ticket has been created." });
+      setShowServiceTicketDialog(false);
+      setServiceTicketForm({ title: "", description: "", category: "general", priority: "medium", matchId: "", projectId: "", clientName: "" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create ticket.", variant: "destructive" });
+    },
+  });
+
+  const updateServiceTicketMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await apiRequest("PATCH", `/api/partner/service-tickets/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/service-tickets"] });
+      toast({ title: "Ticket Updated", description: "Service ticket has been updated." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update ticket.", variant: "destructive" });
+    },
+  });
+
+  const addTicketNoteMutation = useMutation({
+    mutationFn: async ({ ticketId, content }: { ticketId: string; content: string }) => {
+      const res = await apiRequest("POST", `/api/partner/service-tickets/${ticketId}/notes`, { content });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setTicketNotes([...ticketNotes, data]);
+      setNewTicketNote("");
+      toast({ title: "Note Added", description: "Your note has been added." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to add note.", variant: "destructive" });
+    },
+  });
+
+  // Sales Opportunity Mutations
+  const createSalesOpportunityMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/partner/sales-opportunities", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/sales-opportunities"] });
+      toast({ title: "Opportunity Created", description: "Sales opportunity has been created." });
+      setShowSalesOpportunityDialog(false);
+      setSalesOpportunityForm({ matchId: "", clientName: "", projectTitle: "", expectedRevenue: "", probability: "50", expectedCloseDate: "", notes: "" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create opportunity.", variant: "destructive" });
+    },
+  });
+
+  const updateSalesOpportunityMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await apiRequest("PATCH", `/api/partner/sales-opportunities/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/partner/sales-opportunities"] });
+      toast({ title: "Opportunity Updated", description: "Sales opportunity has been updated." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update opportunity.", variant: "destructive" });
     },
   });
 
@@ -715,6 +836,8 @@ export default function PartnerDashboard() {
     { id: "likes", label: "New Likes", icon: Inbox, badge: newLikes.length },
     { id: "matches", label: "Active Matches", icon: Users, badge: mutualMatches.length },
     { id: "messages", label: "Messages", icon: MessageCircle },
+    { id: "service-tickets", label: "Service Tickets", icon: Ticket },
+    { id: "sales-pipeline", label: "Sales Pipeline", icon: PiggyBank },
     { id: "profile", label: "My Profile", icon: User },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
   ];
@@ -1187,6 +1310,200 @@ export default function PartnerDashboard() {
                   </div>
                 )}
               </div>
+            ) : activeTab === "service-tickets" ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <h2 className="text-2xl font-bold">Service Tickets</h2>
+                    <p className="text-muted-foreground">
+                      Track and manage service issues for your matches and projects
+                    </p>
+                  </div>
+                  <Button onClick={() => setShowServiceTicketDialog(true)} data-testid="button-create-ticket">
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Ticket
+                  </Button>
+                </div>
+
+                {serviceTicketsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : serviceTickets.length === 0 ? (
+                  <Card className="p-12 text-center">
+                    <Ticket className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">No service tickets</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Create tickets to track issues with your matches and projects.
+                    </p>
+                    <Button onClick={() => setShowServiceTicketDialog(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create First Ticket
+                    </Button>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    {["incoming", "assigned", "in_progress", "resolved", "issue"].map((phase) => {
+                      const phaseTickets = serviceTickets.filter((t) => t.status === phase);
+                      const phaseConfig: Record<string, { label: string; icon: typeof Inbox; color: string }> = {
+                        incoming: { label: "Incoming", icon: Inbox, color: "from-blue-500 to-blue-600" },
+                        assigned: { label: "Assigned", icon: User, color: "from-purple-500 to-purple-600" },
+                        in_progress: { label: "In Progress", icon: Play, color: "from-orange-500 to-orange-600" },
+                        resolved: { label: "Resolved", icon: CircleCheck, color: "from-green-500 to-green-600" },
+                        issue: { label: "Issue", icon: AlertTriangle, color: "from-red-500 to-red-600" },
+                      };
+                      const config = phaseConfig[phase];
+                      const PhaseIcon = config.icon;
+                      return (
+                        <div key={phase} className="space-y-2">
+                          <div className="flex items-center gap-2 p-2">
+                            <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${config.color} flex items-center justify-center text-white`}>
+                              <PhaseIcon className="w-3 h-3" />
+                            </div>
+                            <span className="font-medium text-sm">{config.label}</span>
+                            <Badge variant="secondary" className="ml-auto text-xs">{phaseTickets.length}</Badge>
+                          </div>
+                          <div className="space-y-2 min-h-[200px] bg-muted/30 rounded-md p-2">
+                            {phaseTickets.map((ticket) => (
+                              <Card 
+                                key={ticket.id} 
+                                className="overflow-visible hover-elevate cursor-pointer"
+                                onClick={async () => {
+                                  setSelectedServiceTicket(ticket);
+                                  try {
+                                    const res = await fetch(`/api/partner/service-tickets/${ticket.id}/notes`, { credentials: "include" });
+                                    const notes = await res.json();
+                                    setTicketNotes(notes);
+                                  } catch { setTicketNotes([]); }
+                                }}
+                                data-testid={`card-ticket-${ticket.id}`}
+                              >
+                                <CardContent className="p-3">
+                                  <div className="flex items-start justify-between gap-2 mb-1">
+                                    <h4 className="font-medium text-sm line-clamp-1">{ticket.title}</h4>
+                                    <Badge 
+                                      variant={ticket.priority === "high" ? "destructive" : ticket.priority === "medium" ? "secondary" : "outline"} 
+                                      className="text-xs shrink-0"
+                                    >
+                                      {ticket.priority}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{ticket.description}</p>
+                                  {ticket.clientName && (
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                      <User className="w-3 h-3" /> {ticket.clientName}
+                                    </p>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : activeTab === "sales-pipeline" ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <h2 className="text-2xl font-bold">Sales Pipeline</h2>
+                    <p className="text-muted-foreground">
+                      Track revenue opportunities from matches to closed deals
+                    </p>
+                  </div>
+                  <Button onClick={() => setShowSalesOpportunityDialog(true)} data-testid="button-create-opportunity">
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Opportunity
+                  </Button>
+                </div>
+
+                {salesOpportunitiesLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                ) : salesOpportunities.length === 0 ? (
+                  <Card className="p-12 text-center">
+                    <PiggyBank className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">No sales opportunities</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Create opportunities to track your sales pipeline and expected revenue.
+                    </p>
+                    <Button onClick={() => setShowSalesOpportunityDialog(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create First Opportunity
+                    </Button>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    {["new_match", "negotiation", "closing", "won", "lost"].map((stage) => {
+                      const stageOpps = salesOpportunities.filter((o) => o.stage === stage);
+                      const stageTotal = stageOpps.reduce((sum, o) => sum + (o.expectedRevenue || 0), 0);
+                      const stageConfig: Record<string, { label: string; icon: typeof CircleDot; color: string }> = {
+                        new_match: { label: "New Match", icon: CircleDot, color: "from-blue-500 to-blue-600" },
+                        negotiation: { label: "Negotiation", icon: Handshake, color: "from-purple-500 to-purple-600" },
+                        closing: { label: "Closing", icon: Target, color: "from-orange-500 to-orange-600" },
+                        won: { label: "Won", icon: Trophy, color: "from-green-500 to-green-600" },
+                        lost: { label: "Lost", icon: CircleX, color: "from-red-500 to-red-600" },
+                      };
+                      const config = stageConfig[stage];
+                      const StageIcon = config.icon;
+                      return (
+                        <div key={stage} className="space-y-2">
+                          <div className="flex items-center gap-2 p-2">
+                            <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${config.color} flex items-center justify-center text-white`}>
+                              <StageIcon className="w-3 h-3" />
+                            </div>
+                            <span className="font-medium text-sm">{config.label}</span>
+                            <Badge variant="secondary" className="ml-auto text-xs">{stageOpps.length}</Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground px-2">
+                            ${stageTotal.toLocaleString()} total
+                          </div>
+                          <div className="space-y-2 min-h-[200px] bg-muted/30 rounded-md p-2">
+                            {stageOpps.map((opp) => (
+                              <Card 
+                                key={opp.id} 
+                                className="overflow-visible hover-elevate cursor-pointer"
+                                onClick={() => setSelectedSalesOpportunity(opp)}
+                                data-testid={`card-opportunity-${opp.id}`}
+                              >
+                                <CardContent className="p-3">
+                                  <div className="flex items-start justify-between gap-2 mb-1">
+                                    <h4 className="font-medium text-sm line-clamp-1">
+                                      {opp.projectTitle || opp.clientName || "Opportunity"}
+                                    </h4>
+                                    <Badge variant="secondary" className="text-xs shrink-0 flex items-center gap-1">
+                                      <Percent className="w-3 h-3" />
+                                      {opp.probability}%
+                                    </Badge>
+                                  </div>
+                                  {opp.clientName && (
+                                    <p className="text-xs text-muted-foreground mb-1">{opp.clientName}</p>
+                                  )}
+                                  <div className="flex items-center gap-2 text-xs">
+                                    <span className="text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
+                                      <CircleDollarSign className="w-3 h-3" />
+                                      ${(opp.expectedRevenue || 0).toLocaleString()}
+                                    </span>
+                                    {opp.expectedCloseDate && (
+                                      <span className="text-muted-foreground flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" />
+                                        {new Date(opp.expectedCloseDate).toLocaleDateString()}
+                                      </span>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             ) : null}
           </main>
         </div>
@@ -1611,6 +1928,422 @@ export default function PartnerDashboard() {
               Save Profile
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Service Ticket Create Dialog */}
+      <Dialog open={showServiceTicketDialog} onOpenChange={setShowServiceTicketDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Service Ticket</DialogTitle>
+            <DialogDescription>
+              Track a service issue for a match or project
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="ticketTitle">Title</Label>
+              <Input
+                id="ticketTitle"
+                placeholder="Brief description of the issue"
+                value={serviceTicketForm.title}
+                onChange={(e) => setServiceTicketForm({ ...serviceTicketForm, title: e.target.value })}
+                data-testid="input-ticket-title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ticketDescription">Description</Label>
+              <Textarea
+                id="ticketDescription"
+                placeholder="Detailed description of the issue..."
+                value={serviceTicketForm.description}
+                onChange={(e) => setServiceTicketForm({ ...serviceTicketForm, description: e.target.value })}
+                rows={3}
+                data-testid="input-ticket-description"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ticketCategory">Category</Label>
+                <Select
+                  value={serviceTicketForm.category}
+                  onValueChange={(v) => setServiceTicketForm({ ...serviceTicketForm, category: v })}
+                >
+                  <SelectTrigger data-testid="select-ticket-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="technical">Technical</SelectItem>
+                    <SelectItem value="billing">Billing</SelectItem>
+                    <SelectItem value="communication">Communication</SelectItem>
+                    <SelectItem value="scope">Scope Change</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ticketPriority">Priority</Label>
+                <Select
+                  value={serviceTicketForm.priority}
+                  onValueChange={(v) => setServiceTicketForm({ ...serviceTicketForm, priority: v })}
+                >
+                  <SelectTrigger data-testid="select-ticket-priority">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ticketClient">Client Name (optional)</Label>
+              <Input
+                id="ticketClient"
+                placeholder="Client name for reference"
+                value={serviceTicketForm.clientName}
+                onChange={(e) => setServiceTicketForm({ ...serviceTicketForm, clientName: e.target.value })}
+                data-testid="input-ticket-client"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowServiceTicketDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => createServiceTicketMutation.mutate(serviceTicketForm)}
+              disabled={createServiceTicketMutation.isPending || !serviceTicketForm.title}
+              data-testid="button-create-service-ticket"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Ticket
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Service Ticket Detail Dialog */}
+      <Dialog open={!!selectedServiceTicket} onOpenChange={(open) => !open && setSelectedServiceTicket(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {selectedServiceTicket && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Ticket className="w-5 h-5" />
+                  {selectedServiceTicket.title}
+                </DialogTitle>
+                <DialogDescription>
+                  Manage this service ticket
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant={selectedServiceTicket.priority === "high" ? "destructive" : selectedServiceTicket.priority === "medium" ? "secondary" : "outline"}>
+                    {selectedServiceTicket.priority} priority
+                  </Badge>
+                  <Badge variant="outline">{selectedServiceTicket.category}</Badge>
+                  {selectedServiceTicket.clientName && (
+                    <Badge variant="secondary">{selectedServiceTicket.clientName}</Badge>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Description</Label>
+                  <p className="text-sm mt-1">{selectedServiceTicket.description}</p>
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select
+                    value={selectedServiceTicket.status}
+                    onValueChange={(v) => {
+                      updateServiceTicketMutation.mutate({
+                        id: selectedServiceTicket.id,
+                        data: { status: v },
+                      });
+                      setSelectedServiceTicket({ ...selectedServiceTicket, status: v as any });
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-ticket-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="incoming">Incoming</SelectItem>
+                      <SelectItem value="assigned">Assigned</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="resolved">Resolved</SelectItem>
+                      <SelectItem value="issue">Issue</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Separator />
+                <div className="space-y-3">
+                  <Label>Notes</Label>
+                  <ScrollArea className="h-[150px] border rounded-md p-3">
+                    {ticketNotes.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No notes yet</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {ticketNotes.map((note) => (
+                          <div key={note.id} className="text-sm">
+                            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+                              <span className="font-medium">{note.userName}</span>
+                              <span>{note.createdAt ? new Date(note.createdAt).toLocaleString() : ""}</span>
+                            </div>
+                            <p>{note.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Add a note..."
+                      value={newTicketNote}
+                      onChange={(e) => setNewTicketNote(e.target.value)}
+                      data-testid="input-ticket-note"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => addTicketNoteMutation.mutate({ ticketId: selectedServiceTicket.id, content: newTicketNote })}
+                      disabled={!newTicketNote.trim() || addTicketNoteMutation.isPending}
+                      data-testid="button-add-note"
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Sales Opportunity Create Dialog */}
+      <Dialog open={showSalesOpportunityDialog} onOpenChange={setShowSalesOpportunityDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Sales Opportunity</DialogTitle>
+            <DialogDescription>
+              Track a revenue opportunity from a match
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="oppClient">Client Name</Label>
+                <Input
+                  id="oppClient"
+                  placeholder="Client company name"
+                  value={salesOpportunityForm.clientName}
+                  onChange={(e) => setSalesOpportunityForm({ ...salesOpportunityForm, clientName: e.target.value })}
+                  data-testid="input-opp-client"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="oppProject">Project Title</Label>
+                <Input
+                  id="oppProject"
+                  placeholder="Project or deal name"
+                  value={salesOpportunityForm.projectTitle}
+                  onChange={(e) => setSalesOpportunityForm({ ...salesOpportunityForm, projectTitle: e.target.value })}
+                  data-testid="input-opp-project"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="oppRevenue">Expected Revenue ($)</Label>
+                <Input
+                  id="oppRevenue"
+                  type="number"
+                  placeholder="e.g. 25000"
+                  value={salesOpportunityForm.expectedRevenue}
+                  onChange={(e) => setSalesOpportunityForm({ ...salesOpportunityForm, expectedRevenue: e.target.value })}
+                  data-testid="input-opp-revenue"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="oppProbability">Probability (%)</Label>
+                <Input
+                  id="oppProbability"
+                  type="number"
+                  min="0"
+                  max="100"
+                  placeholder="50"
+                  value={salesOpportunityForm.probability}
+                  onChange={(e) => setSalesOpportunityForm({ ...salesOpportunityForm, probability: e.target.value })}
+                  data-testid="input-opp-probability"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="oppCloseDate">Expected Close Date</Label>
+              <Input
+                id="oppCloseDate"
+                type="date"
+                value={salesOpportunityForm.expectedCloseDate}
+                onChange={(e) => setSalesOpportunityForm({ ...salesOpportunityForm, expectedCloseDate: e.target.value })}
+                data-testid="input-opp-close-date"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="oppNotes">Notes</Label>
+              <Textarea
+                id="oppNotes"
+                placeholder="Additional notes about this opportunity..."
+                value={salesOpportunityForm.notes}
+                onChange={(e) => setSalesOpportunityForm({ ...salesOpportunityForm, notes: e.target.value })}
+                rows={2}
+                data-testid="input-opp-notes"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSalesOpportunityDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => createSalesOpportunityMutation.mutate({
+                ...salesOpportunityForm,
+                expectedRevenue: salesOpportunityForm.expectedRevenue ? parseFloat(salesOpportunityForm.expectedRevenue) : null,
+                probability: salesOpportunityForm.probability ? parseInt(salesOpportunityForm.probability) : 50,
+                expectedCloseDate: salesOpportunityForm.expectedCloseDate ? new Date(salesOpportunityForm.expectedCloseDate) : null,
+              })}
+              disabled={createSalesOpportunityMutation.isPending || !salesOpportunityForm.clientName}
+              data-testid="button-create-opportunity"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Opportunity
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sales Opportunity Detail Dialog */}
+      <Dialog open={!!selectedSalesOpportunity} onOpenChange={(open) => !open && setSelectedSalesOpportunity(null)}>
+        <DialogContent>
+          {selectedSalesOpportunity && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <PiggyBank className="w-5 h-5" />
+                  {selectedSalesOpportunity.projectTitle || selectedSalesOpportunity.clientName || "Opportunity"}
+                </DialogTitle>
+                <DialogDescription>
+                  Manage this sales opportunity
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <CircleDollarSign className="w-3 h-3" />
+                    ${(selectedSalesOpportunity.expectedRevenue || 0).toLocaleString()}
+                  </Badge>
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Percent className="w-3 h-3" />
+                    {selectedSalesOpportunity.probability}% probability
+                  </Badge>
+                </div>
+                {selectedSalesOpportunity.clientName && (
+                  <div>
+                    <Label className="text-muted-foreground">Client</Label>
+                    <p className="text-sm mt-1">{selectedSalesOpportunity.clientName}</p>
+                  </div>
+                )}
+                {selectedSalesOpportunity.notes && (
+                  <div>
+                    <Label className="text-muted-foreground">Notes</Label>
+                    <p className="text-sm mt-1">{selectedSalesOpportunity.notes}</p>
+                  </div>
+                )}
+                <Separator />
+                <div className="space-y-2">
+                  <Label>Stage</Label>
+                  <Select
+                    value={selectedSalesOpportunity.stage}
+                    onValueChange={(v) => {
+                      updateSalesOpportunityMutation.mutate({
+                        id: selectedSalesOpportunity.id,
+                        data: { stage: v },
+                      });
+                      setSelectedSalesOpportunity({ ...selectedSalesOpportunity, stage: v as any });
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-opp-stage">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new_match">New Match</SelectItem>
+                      <SelectItem value="negotiation">Negotiation</SelectItem>
+                      <SelectItem value="closing">Closing</SelectItem>
+                      <SelectItem value="won">Won</SelectItem>
+                      <SelectItem value="lost">Lost</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Expected Revenue</Label>
+                    <Input
+                      type="number"
+                      value={selectedSalesOpportunity.expectedRevenue || ""}
+                      onChange={(e) => {
+                        const val = e.target.value ? parseFloat(e.target.value) : null;
+                        setSelectedSalesOpportunity({ ...selectedSalesOpportunity, expectedRevenue: val });
+                      }}
+                      onBlur={() => {
+                        updateSalesOpportunityMutation.mutate({
+                          id: selectedSalesOpportunity.id,
+                          data: { expectedRevenue: selectedSalesOpportunity.expectedRevenue },
+                        });
+                      }}
+                      data-testid="input-edit-opp-revenue"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Probability (%)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={selectedSalesOpportunity.probability || ""}
+                      onChange={(e) => {
+                        const val = e.target.value ? parseInt(e.target.value) : 0;
+                        setSelectedSalesOpportunity({ ...selectedSalesOpportunity, probability: val });
+                      }}
+                      onBlur={() => {
+                        updateSalesOpportunityMutation.mutate({
+                          id: selectedSalesOpportunity.id,
+                          data: { probability: selectedSalesOpportunity.probability },
+                        });
+                      }}
+                      data-testid="input-edit-opp-probability"
+                    />
+                  </div>
+                </div>
+                {selectedSalesOpportunity.stage === "lost" && (
+                  <div className="space-y-2">
+                    <Label>Lost Reason</Label>
+                    <Textarea
+                      placeholder="Why was this opportunity lost?"
+                      value={selectedSalesOpportunity.lostReason || ""}
+                      onChange={(e) => setSelectedSalesOpportunity({ ...selectedSalesOpportunity, lostReason: e.target.value })}
+                      onBlur={() => {
+                        updateSalesOpportunityMutation.mutate({
+                          id: selectedSalesOpportunity.id,
+                          data: { lostReason: selectedSalesOpportunity.lostReason },
+                        });
+                      }}
+                      data-testid="input-opp-lost-reason"
+                    />
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </SidebarProvider>
