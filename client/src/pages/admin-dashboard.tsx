@@ -71,13 +71,55 @@ interface AdminUser {
 }
 
 interface AdminAnalytics {
-  totalClients: number;
-  totalPartners: number;
-  totalMatches: number;
-  mutualMatches: number;
-  totalMessages: number;
-  openTickets: number;
-  activeUsers: number;
+  totals: {
+    clients: number;
+    partners: number;
+    matches: number;
+    mutualMatches: number;
+    messages: number;
+    activeUsers: number;
+  };
+  conversion: {
+    matchConversionRate: number;
+    responseRate: number;
+    clientResponseRate: number;
+    partnerResponseRate: number;
+  };
+  growth: {
+    newUsersThisWeek: number;
+    newUsersThisMonth: number;
+    newMatchesThisWeek: number;
+    newMatchesThisMonth: number;
+    userGrowthPercent: number;
+    matchGrowthPercent: number;
+  };
+  revenue: {
+    totalPipelineValue: number;
+    closedDealsValue: number;
+    lostDealsValue: number;
+    averageDealSize: number;
+    dealsInProgress: number;
+  };
+  leaderboards: {
+    topPartnersByMatches: Array<{ id: string; name: string; company: string; matchCount: number }>;
+    topPartnersByConversion: Array<{ id: string; name: string; company: string; conversionRate: number; matchCount: number }>;
+  };
+  distribution: {
+    partnersByIndustry: Array<{ industry: string; count: number }>;
+    clientsByIndustry: Array<{ industry: string; count: number }>;
+  };
+  support: {
+    openTickets: number;
+    ticketsByCategory: Array<{ category: string; count: number }>;
+    ticketsByPriority: Array<{ priority: string; count: number }>;
+    averageResolutionHours: number | null;
+    resolvedThisWeek: number;
+  };
+  activity: {
+    recentMatches: Array<{ id: string; clientName: string; partnerName: string; createdAt: string }>;
+    recentSignups: Array<{ id: string; email: string; role: string; createdAt: string }>;
+  };
+  lastUpdated: string;
 }
 
 function StatCard({ 
@@ -717,65 +759,301 @@ export default function AdminDashboard() {
             <div className="p-6">
               {activeTab === "overview" && (
                 <div className="space-y-6">
+                  {/* Core Stats */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatCard
                       icon={Users}
                       label="Total Clients"
-                      value={analytics?.totalClients || 0}
+                      value={analytics?.totals?.clients || 0}
                       subtext="Registered clients"
                       color="blue"
                     />
                     <StatCard
                       icon={Building2}
                       label="Total Partners"
-                      value={analytics?.totalPartners || 0}
+                      value={analytics?.totals?.partners || 0}
                       subtext="Active partners"
                       color="purple"
                     />
                     <StatCard
                       icon={TrendingUp}
                       label="Total Matches"
-                      value={analytics?.totalMatches || 0}
-                      subtext={`${analytics?.mutualMatches || 0} mutual`}
+                      value={analytics?.totals?.matches || 0}
+                      subtext={`${analytics?.totals?.mutualMatches || 0} mutual`}
                       color="green"
                     />
                     <StatCard
                       icon={Inbox}
                       label="Open Tickets"
-                      value={analytics?.openTickets || 0}
+                      value={analytics?.support?.openTickets || 0}
                       subtext="Needs attention"
                       color="orange"
                     />
                   </div>
 
+                  {/* Growth & Conversion Row */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-green-500" />
+                          Conversion Metrics
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Match Conversion</span>
+                          <span className="font-semibold text-green-600">{analytics?.conversion?.matchConversionRate || 0}%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Client Response</span>
+                          <span className="font-medium">{analytics?.conversion?.clientResponseRate || 0}%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Partner Response</span>
+                          <span className="font-medium">{analytics?.conversion?.partnerResponseRate || 0}%</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <Activity className="w-4 h-4 text-blue-500" />
+                          Growth (30 days)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">New Users</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{analytics?.growth?.newUsersThisMonth || 0}</span>
+                            {(analytics?.growth?.userGrowthPercent || 0) > 0 && (
+                              <Badge variant="secondary" className="text-xs text-green-600">
+                                +{analytics?.growth?.userGrowthPercent}%
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">New Matches</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{analytics?.growth?.newMatchesThisMonth || 0}</span>
+                            {(analytics?.growth?.matchGrowthPercent || 0) > 0 && (
+                              <Badge variant="secondary" className="text-xs text-green-600">
+                                +{analytics?.growth?.matchGrowthPercent}%
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">This Week</span>
+                          <span className="font-medium">{analytics?.growth?.newUsersThisWeek || 0} users</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <Layers className="w-4 h-4 text-purple-500" />
+                          Revenue Pipeline
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Pipeline Value</span>
+                          <span className="font-semibold text-purple-600">
+                            ${(analytics?.revenue?.totalPipelineValue || 0).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Closed Deals</span>
+                          <span className="font-medium text-green-600">
+                            ${(analytics?.revenue?.closedDealsValue || 0).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Avg Deal Size</span>
+                          <span className="font-medium">
+                            ${(analytics?.revenue?.averageDealSize || 0).toLocaleString()}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Leaderboards & Distribution */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Building2 className="w-5 h-5" />
+                          Top Partners by Matches
+                        </CardTitle>
+                        <CardDescription>Most active partners on the platform</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {(analytics?.leaderboards?.topPartnersByMatches?.length || 0) === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground text-sm">
+                            No partner data yet
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {analytics?.leaderboards?.topPartnersByMatches?.map((partner, index) => (
+                              <div key={partner.id} className="flex items-center gap-3">
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                  index === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+                                  index === 1 ? 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' :
+                                  index === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' :
+                                  'bg-muted text-muted-foreground'
+                                }`}>
+                                  {index + 1}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{partner.company}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{partner.name}</p>
+                                </div>
+                                <Badge variant="secondary">{partner.matchCount} matches</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Briefcase className="w-5 h-5" />
+                          Industry Distribution
+                        </CardTitle>
+                        <CardDescription>Partners and clients by sector</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Partners by Industry</p>
+                            {(analytics?.distribution?.partnersByIndustry?.length || 0) === 0 ? (
+                              <p className="text-sm text-muted-foreground">No data</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {analytics?.distribution?.partnersByIndustry?.slice(0, 4).map((item) => (
+                                  <div key={item.industry} className="flex items-center gap-2">
+                                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                      <div 
+                                        className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                                        style={{ 
+                                          width: `${Math.min((item.count / (analytics?.totals?.partners || 1)) * 100, 100)}%` 
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="text-xs text-muted-foreground w-24 truncate">{item.industry}</span>
+                                    <span className="text-xs font-medium w-8 text-right">{item.count}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <Separator />
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Clients by Industry</p>
+                            {(analytics?.distribution?.clientsByIndustry?.length || 0) === 0 ? (
+                              <p className="text-sm text-muted-foreground">No data</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {analytics?.distribution?.clientsByIndustry?.slice(0, 4).map((item) => (
+                                  <div key={item.industry} className="flex items-center gap-2">
+                                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                      <div 
+                                        className="h-full bg-gradient-to-r from-orange-500 to-pink-500 rounded-full"
+                                        style={{ 
+                                          width: `${Math.min((item.count / (analytics?.totals?.clients || 1)) * 100, 100)}%` 
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="text-xs text-muted-foreground w-24 truncate">{item.industry}</span>
+                                    <span className="text-xs font-medium w-8 text-right">{item.count}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Activity & Support Row */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <Activity className="w-5 h-5" />
-                          Platform Activity
+                          Recent Activity
                         </CardTitle>
-                        <CardDescription>Key metrics at a glance</CardDescription>
+                        <CardDescription>Latest platform events</CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Active Users (30 days)</span>
-                          <span className="font-medium">{analytics?.activeUsers || 0}</span>
-                        </div>
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Total Messages</span>
-                          <span className="font-medium">{analytics?.totalMessages || 0}</span>
-                        </div>
-                        <Separator />
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Match Rate</span>
-                          <span className="font-medium">
-                            {analytics?.totalMatches && analytics.totalMatches > 0 
-                              ? Math.round((analytics.mutualMatches / analytics.totalMatches) * 100) 
-                              : 0}%
-                          </span>
-                        </div>
+                      <CardContent>
+                        <Tabs defaultValue="signups" className="w-full">
+                          <TabsList className="w-full">
+                            <TabsTrigger value="signups" className="flex-1">Signups</TabsTrigger>
+                            <TabsTrigger value="matches" className="flex-1">Matches</TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="signups" className="mt-4">
+                            <ScrollArea className="h-[180px]">
+                              {(analytics?.activity?.recentSignups?.length || 0) === 0 ? (
+                                <div className="text-center py-8 text-muted-foreground text-sm">
+                                  No recent signups
+                                </div>
+                              ) : (
+                                <div className="space-y-3">
+                                  {analytics?.activity?.recentSignups?.map((signup) => (
+                                    <div key={signup.id} className="flex items-center gap-3 p-2 rounded-lg border">
+                                      <Avatar className="w-8 h-8">
+                                        <AvatarFallback className="text-xs">
+                                          {signup.email.charAt(0).toUpperCase()}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium truncate">{signup.email}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {new Date(signup.createdAt).toLocaleDateString()}
+                                        </p>
+                                      </div>
+                                      <Badge variant="outline" className="text-xs capitalize">{signup.role}</Badge>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </ScrollArea>
+                          </TabsContent>
+                          <TabsContent value="matches" className="mt-4">
+                            <ScrollArea className="h-[180px]">
+                              {(analytics?.activity?.recentMatches?.length || 0) === 0 ? (
+                                <div className="text-center py-8 text-muted-foreground text-sm">
+                                  No recent matches
+                                </div>
+                              ) : (
+                                <div className="space-y-3">
+                                  {analytics?.activity?.recentMatches?.map((match) => (
+                                    <div key={match.id} className="flex items-center gap-2 p-2 rounded-lg border">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium truncate">{match.clientName}</p>
+                                        <p className="text-xs text-muted-foreground truncate">
+                                          matched with {match.partnerName}
+                                        </p>
+                                      </div>
+                                      <span className="text-xs text-muted-foreground shrink-0">
+                                        {new Date(match.createdAt).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </ScrollArea>
+                          </TabsContent>
+                        </Tabs>
                       </CardContent>
                     </Card>
 
@@ -783,46 +1061,52 @@ export default function AdminDashboard() {
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <Inbox className="w-5 h-5" />
-                          Recent Tickets
+                          Support Health
                         </CardTitle>
-                        <CardDescription>Latest support requests</CardDescription>
+                        <CardDescription>Ticket status and resolution</CardDescription>
                       </CardHeader>
-                      <CardContent>
-                        <ScrollArea className="h-[200px]">
-                          {ticketsLoading ? (
-                            <div className="text-center py-8 text-muted-foreground">
-                              Loading tickets...
-                            </div>
-                          ) : tickets.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground">
-                              No tickets yet
-                            </div>
-                          ) : (
-                            <div className="space-y-3">
-                              {tickets.slice(0, 5).map((ticket) => (
-                                <div 
-                                  key={ticket.id}
-                                  className="flex items-start gap-3 p-3 rounded-lg border hover-elevate cursor-pointer"
-                                  onClick={() => {
-                                    setSelectedTicket(ticket);
-                                    setTicketDialogOpen(true);
-                                  }}
-                                  data-testid={`ticket-preview-${ticket.id}`}
-                                >
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-sm truncate">{ticket.subject}</p>
-                                    <p className="text-xs text-muted-foreground truncate">{ticket.email}</p>
-                                  </div>
-                                  <TicketStatusBadge status={ticket.status || "open"} />
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </ScrollArea>
-                        {tickets.length > 5 && (
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="text-center p-3 rounded-lg bg-muted/50">
+                            <p className="text-2xl font-bold">{analytics?.support?.openTickets || 0}</p>
+                            <p className="text-xs text-muted-foreground">Open Tickets</p>
+                          </div>
+                          <div className="text-center p-3 rounded-lg bg-muted/50">
+                            <p className="text-2xl font-bold">{analytics?.support?.resolvedThisWeek || 0}</p>
+                            <p className="text-xs text-muted-foreground">Resolved This Week</p>
+                          </div>
+                        </div>
+                        {analytics?.support?.averageResolutionHours !== null && (
+                          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                            <span className="text-sm text-muted-foreground">Avg Resolution Time</span>
+                            <span className="font-medium">
+                              {analytics?.support?.averageResolutionHours || 0}h
+                            </span>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-2">By Priority</p>
+                          <div className="flex gap-2 flex-wrap">
+                            {analytics?.support?.ticketsByPriority?.map((item) => (
+                              <Badge 
+                                key={item.priority} 
+                                variant="outline"
+                                className={`${
+                                  item.priority === 'urgent' ? 'border-red-500 text-red-500' :
+                                  item.priority === 'high' ? 'border-orange-500 text-orange-500' :
+                                  item.priority === 'medium' ? 'border-yellow-500 text-yellow-500' :
+                                  'border-slate-400 text-slate-500'
+                                }`}
+                              >
+                                {item.priority}: {item.count}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        {tickets.length > 0 && (
                           <Button
                             variant="ghost"
-                            className="w-full mt-4"
+                            className="w-full"
                             onClick={() => setActiveTab("tickets")}
                             data-testid="button-view-all-tickets"
                           >
