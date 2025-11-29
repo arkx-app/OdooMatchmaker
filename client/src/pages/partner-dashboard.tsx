@@ -976,6 +976,29 @@ export default function PartnerDashboard() {
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <div className="p-3 rounded-lg bg-gradient-to-br from-partner-from/10 to-partner-to/10 border border-partner-from/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-4 h-4 text-partner-from" />
+                    <span className="font-medium text-sm">Upgrade to Pro</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Get unlimited leads, priority matching & analytics
+                  </p>
+                  <Button 
+                    size="sm" 
+                    className="w-full bg-gradient-to-r from-partner-from to-partner-to text-white"
+                    onClick={() => navigate("/pricing")}
+                    data-testid="button-upgrade-pro"
+                  >
+                    <Zap className="w-3 h-3 mr-1" />
+                    View Plans
+                  </Button>
+                </div>
+              </SidebarGroupContent>
+            </SidebarGroup>
           </SidebarContent>
 
           <SidebarFooter className="p-4 border-t">
