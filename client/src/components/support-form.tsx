@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { 
-  HelpCircle, Send, X, MessageCircle, 
-  ChevronDown, CheckCircle2, Loader2
+  HelpCircle, Send, MessageCircle, 
+  CheckCircle2, Loader2, User, Mail, Briefcase
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -22,7 +23,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Sheet,
@@ -33,6 +33,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SupportFormProps {
   userEmail?: string;
@@ -70,15 +71,34 @@ function SupportFormContent({
   onSuccess?: () => void;
 }) {
   const { toast } = useToast();
+  const { user, isLoading: authLoading } = useAuth();
+  
+  // Derive user info from auth if available
+  const derivedName = userName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '') || '';
+  const derivedEmail = userEmail || user?.email || '';
+  const derivedRole = userType || user?.role || 'anonymous';
+  const isLoggedIn = !!user;
+  
   const [formData, setFormData] = useState({
-    name: userName || "",
-    email: userEmail || "",
+    name: derivedName,
+    email: derivedEmail,
     subject: "",
     message: "",
     category: "general",
     priority: "medium",
   });
   const [submitted, setSubmitted] = useState(false);
+  
+  // Update form when user data loads
+  useEffect(() => {
+    if (user && !authLoading) {
+      setFormData(prev => ({
+        ...prev,
+        name: prev.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        email: prev.email || user.email,
+      }));
+    }
+  }, [user, authLoading]);
 
   const submitMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -87,7 +107,8 @@ function SupportFormContent({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          userType: userType || "anonymous",
+          userType: derivedRole,
+          userId: user?.id || null,
         }),
         credentials: "include",
       });
@@ -123,7 +144,11 @@ function SupportFormContent({
     const trimmedSubject = formData.subject.trim();
     const trimmedMessage = formData.message.trim();
     
-    if (!trimmedName) {
+    // For logged-in users, use their info directly
+    const finalName = isLoggedIn ? (derivedName || trimmedEmail) : trimmedName;
+    const finalEmail = isLoggedIn ? derivedEmail : trimmedEmail;
+    
+    if (!finalName) {
       toast({
         title: "Name required",
         description: "Please enter your name.",
@@ -131,7 +156,7 @@ function SupportFormContent({
       });
       return;
     }
-    if (!trimmedEmail || !trimmedEmail.includes("@")) {
+    if (!finalEmail || !finalEmail.includes("@")) {
       toast({
         title: "Valid email required",
         description: "Please enter a valid email address.",
@@ -157,8 +182,8 @@ function SupportFormContent({
     }
     submitMutation.mutate({
       ...formData,
-      name: trimmedName,
-      email: trimmedEmail,
+      name: finalName,
+      email: finalEmail,
       subject: trimmedSubject,
       message: trimmedMessage,
     });
@@ -180,35 +205,60 @@ function SupportFormContent({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">
-            Name <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="name"
-            placeholder="Your name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-            data-testid="input-support-name"
-          />
+      {/* User info section - auto-populated when logged in */}
+      {isLoggedIn && (
+        <div className="p-3 rounded-md bg-muted/50 border">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-1.5">
+                <User className="w-4 h-4 text-muted-foreground" />
+                <span>{formData.name || formData.email}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Mail className="w-4 h-4 text-muted-foreground" />
+                <span className="text-muted-foreground">{formData.email}</span>
+              </div>
+            </div>
+            <Badge variant="outline" className="capitalize">
+              <Briefcase className="w-3 h-3 mr-1" />
+              {derivedRole}
+            </Badge>
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="email">
-            Email <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="your@email.com"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            required
-            data-testid="input-support-email"
-          />
+      )}
+      
+      {/* Name/Email fields - only show when not logged in */}
+      {!isLoggedIn && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">
+              Name <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="name"
+              placeholder="Your name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              data-testid="input-support-name"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">
+              Email <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="your@email.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+              data-testid="input-support-email"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
