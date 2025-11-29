@@ -120,8 +120,12 @@ RESTful API endpoints organized by resource:
 - `GET /api/admin/tickets/:id` - Get specific ticket details
 - `PATCH /api/admin/tickets/:id` - Update ticket status/priority
 
-**Support Tickets:**
+**Support Tickets (Helpdesk):**
 - `POST /api/tickets` - Submit new support ticket (accessible by anyone)
+- `GET /api/tickets/my` - Get all tickets for authenticated user
+- `GET /api/tickets/:id` - Get specific ticket with messages (for ticket owner)
+- `POST /api/tickets/:id/messages` - Send message on ticket (creates public comment)
+- `GET /api/tickets/:id/messages` - Get public messages for ticket
 
 **Business Logic:**
 - In-memory storage implementation (MemStorage) with interface-based design allowing easy migration to database persistence
@@ -160,9 +164,17 @@ The application uses Drizzle ORM with PostgreSQL, defining three core tables:
 4. **Support Tickets Table:**
    - User contact information (name, email)
    - Ticket details (subject, message, category)
-   - Status tracking (open, in_progress, resolved, closed)
-   - Priority levels (low, medium, high)
+   - Status tracking (incoming, assigned, fixed, issue)
+   - Priority levels (low, medium, high, urgent)
    - Admin notes and resolution fields
+   - userId linking to submitter for bidirectional communication
+
+5. **Ticket Comments Table:**
+   - ticketId linking to parent ticket
+   - userId and userName for message attribution
+   - userRole to distinguish admin vs user messages
+   - isInternal flag (true = admin-only notes, false = public messages)
+   - content and timestamps
 
 **Schema Validation:**
 - Zod schemas derived from Drizzle table definitions using `createInsertSchema`
