@@ -4,6 +4,13 @@
 
 ERP Matcher is a B2B matchmaking platform that connects ERP Partners with potential Clients through an intuitive, Tinder-style swipe interface. The application features a split-personality design with distinct experiences for Clients (who browse and select Partners) and Partners (who create profiles to be discovered). The platform uses a playful yet professional approach, combining dating app mechanics with enterprise software credibility to facilitate business connections in the ERP ecosystem.
 
+**Monetization Model:**
+- **Clients:** 100% free access to all features (unlimited likes, matches, messaging, dashboard features)
+- **Partners:** Freemium model with tiered pricing:
+  - **Starter:** $29/month - Basic lead access, 25 leads/month, email support
+  - **Professional:** $79/month - Priority leads, 100 leads/month, 5 team members, analytics
+  - **Enterprise:** $199/month - Unlimited leads, unlimited team, dedicated support, custom integrations
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
