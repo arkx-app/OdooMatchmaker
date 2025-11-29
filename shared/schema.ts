@@ -161,6 +161,7 @@ export const ticketComments = pgTable("ticket_comments", {
   ticketId: varchar("ticket_id").notNull(),
   userId: varchar("user_id").notNull(),
   userName: text("user_name").notNull(),
+  userRole: text("user_role").default("user"), // 'admin', 'client', 'partner'
   content: text("content").notNull(),
   isInternal: boolean("is_internal").default(true), // Internal notes only visible to admins
   createdAt: timestamp("created_at").defaultNow(),
@@ -350,6 +351,7 @@ export const insertTicketCommentSchema = createInsertSchema(ticketComments).omit
   createdAt: true,
 }).extend({
   isInternal: z.boolean().optional(),
+  userRole: z.string().optional(),
 });
 
 // Partner Service Ticket schemas

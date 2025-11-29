@@ -811,6 +811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ticketId: req.params.id,
         userId: userId,
         userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+        userRole: user.role || "admin",
       });
 
       if (!result.success) {
@@ -980,6 +981,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ticketId: req.params.id,
         userId: userId,
         userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+        userRole: user.role || "user",
         content: content.trim(),
         isInternal: finalIsInternal,
       });

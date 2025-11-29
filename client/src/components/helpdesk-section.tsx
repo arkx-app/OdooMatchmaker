@@ -276,10 +276,7 @@ function TicketChat({
 
   const sendMutation = useMutation({
     mutationFn: async (content: string) => {
-      return apiRequest(`/api/tickets/${ticket.id}/messages`, {
-        method: "POST",
-        body: JSON.stringify({ content }),
-      });
+      return apiRequest("POST", `/api/tickets/${ticket.id}/messages`, { content });
     },
     onSuccess: () => {
       setNewMessage("");
