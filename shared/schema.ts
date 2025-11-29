@@ -166,6 +166,54 @@ export const ticketComments = pgTable("ticket_comments", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Partner Service Tickets - for managing service-related issues tied to matches/projects
+export const partnerServiceTickets = pgTable("partner_service_tickets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull(),
+  matchId: varchar("match_id"), // Optional - link to a match
+  projectId: varchar("project_id"), // Optional - link to a project
+  clientName: text("client_name"), // Cached for display
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  category: text("category").default("general"), // 'general', 'technical', 'billing', 'customization'
+  priority: text("priority").default("medium"), // 'low', 'medium', 'high', 'urgent'
+  status: text("status").default("incoming"), // 'incoming', 'assigned', 'in_progress', 'resolved', 'issue'
+  assignedTo: text("assigned_to"), // Team member name
+  attachmentUrl: text("attachment_url"),
+  resolution: text("resolution"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+});
+
+// Partner Service Ticket Notes - for internal notes on service tickets
+export const partnerServiceTicketNotes = pgTable("partner_service_ticket_notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketId: varchar("ticket_id").notNull(),
+  partnerId: varchar("partner_id").notNull(),
+  authorName: text("author_name").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Partner Sales Opportunities - for tracking sales pipeline from matches
+export const partnerSalesOpportunities = pgTable("partner_sales_opportunities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  partnerId: varchar("partner_id").notNull(),
+  matchId: varchar("match_id").notNull(), // Always linked to a match
+  clientName: text("client_name"), // Cached for display
+  projectTitle: text("project_title"), // From brief
+  stage: text("stage").default("new_match"), // 'new_match', 'negotiation', 'closing', 'won', 'lost'
+  expectedRevenue: integer("expected_revenue"),
+  probability: integer("probability").default(0), // 0-100% chance of closing
+  expectedCloseDate: timestamp("expected_close_date"),
+  notes: text("notes"),
+  lostReason: text("lost_reason"), // If stage is 'lost'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  closedAt: timestamp("closed_at"),
+});
+
 // Zod schemas for inserts
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -304,6 +352,66 @@ export const insertTicketCommentSchema = createInsertSchema(ticketComments).omit
   isInternal: z.boolean().optional(),
 });
 
+// Partner Service Ticket schemas
+export const insertPartnerServiceTicketSchema = createInsertSchema(partnerServiceTickets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  resolvedAt: true,
+}).extend({
+  matchId: z.string().optional().nullable(),
+  projectId: z.string().optional().nullable(),
+  clientName: z.string().optional().nullable(),
+  category: z.string().optional(),
+  priority: z.string().optional(),
+  status: z.string().optional(),
+  assignedTo: z.string().optional().nullable(),
+  attachmentUrl: z.string().optional().nullable(),
+  resolution: z.string().optional().nullable(),
+});
+
+export const updatePartnerServiceTicketSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  category: z.enum(["general", "technical", "billing", "customization"]).optional(),
+  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+  status: z.enum(["incoming", "assigned", "in_progress", "resolved", "issue"]).optional(),
+  assignedTo: z.string().optional().nullable(),
+  attachmentUrl: z.string().optional().nullable(),
+  resolution: z.string().optional().nullable(),
+});
+
+export const insertPartnerServiceTicketNoteSchema = createInsertSchema(partnerServiceTicketNotes).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Partner Sales Opportunity schemas
+export const insertPartnerSalesOpportunitySchema = createInsertSchema(partnerSalesOpportunities).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  closedAt: true,
+}).extend({
+  clientName: z.string().optional().nullable(),
+  projectTitle: z.string().optional().nullable(),
+  stage: z.string().optional(),
+  expectedRevenue: z.number().optional().nullable(),
+  probability: z.number().optional(),
+  expectedCloseDate: z.coerce.date().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  lostReason: z.string().optional().nullable(),
+});
+
+export const updatePartnerSalesOpportunitySchema = z.object({
+  stage: z.enum(["new_match", "negotiation", "closing", "won", "lost"]).optional(),
+  expectedRevenue: z.coerce.number().optional().nullable(),
+  probability: z.coerce.number().optional().nullable(),
+  expectedCloseDate: z.coerce.date().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  lostReason: z.string().optional().nullable(),
+});
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -332,3 +440,12 @@ export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
 
 export type TicketComment = typeof ticketComments.$inferSelect;
 export type InsertTicketComment = z.infer<typeof insertTicketCommentSchema>;
+
+export type PartnerServiceTicket = typeof partnerServiceTickets.$inferSelect;
+export type InsertPartnerServiceTicket = z.infer<typeof insertPartnerServiceTicketSchema>;
+
+export type PartnerServiceTicketNote = typeof partnerServiceTicketNotes.$inferSelect;
+export type InsertPartnerServiceTicketNote = z.infer<typeof insertPartnerServiceTicketNoteSchema>;
+
+export type PartnerSalesOpportunity = typeof partnerSalesOpportunities.$inferSelect;
+export type InsertPartnerSalesOpportunity = z.infer<typeof insertPartnerSalesOpportunitySchema>;

@@ -1,5 +1,6 @@
 import { 
   users, partners, clients, briefs, matches, messages, projects, supportTickets, ticketComments,
+  partnerServiceTickets, partnerServiceTicketNotes, partnerSalesOpportunities,
   type Partner, type InsertPartner, 
   type Client, type InsertClient,
   type Match, type InsertMatch,
@@ -9,6 +10,9 @@ import {
   type Project, type InsertProject,
   type SupportTicket, type InsertSupportTicket,
   type TicketComment, type InsertTicketComment,
+  type PartnerServiceTicket, type InsertPartnerServiceTicket,
+  type PartnerServiceTicketNote, type InsertPartnerServiceTicketNote,
+  type PartnerSalesOpportunity, type InsertPartnerSalesOpportunity,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -91,6 +95,23 @@ export interface IStorage {
 
   // User Management
   getAllUsers(): Promise<User[]>;
+
+  // Partner Service Tickets
+  createPartnerServiceTicket(ticket: InsertPartnerServiceTicket): Promise<PartnerServiceTicket>;
+  getPartnerServiceTicket(id: string): Promise<PartnerServiceTicket | undefined>;
+  getPartnerServiceTickets(partnerId: string): Promise<PartnerServiceTicket[]>;
+  updatePartnerServiceTicket(id: string, updates: Partial<PartnerServiceTicket>): Promise<PartnerServiceTicket | undefined>;
+  
+  // Partner Service Ticket Notes
+  createPartnerServiceTicketNote(note: InsertPartnerServiceTicketNote): Promise<PartnerServiceTicketNote>;
+  getPartnerServiceTicketNotes(ticketId: string): Promise<PartnerServiceTicketNote[]>;
+  
+  // Partner Sales Opportunities
+  createPartnerSalesOpportunity(opportunity: InsertPartnerSalesOpportunity): Promise<PartnerSalesOpportunity>;
+  getPartnerSalesOpportunity(id: string): Promise<PartnerSalesOpportunity | undefined>;
+  getPartnerSalesOpportunities(partnerId: string): Promise<PartnerSalesOpportunity[]>;
+  getPartnerSalesOpportunityByMatch(partnerId: string, matchId: string): Promise<PartnerSalesOpportunity | undefined>;
+  updatePartnerSalesOpportunity(id: string, updates: Partial<PartnerSalesOpportunity>): Promise<PartnerSalesOpportunity | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -528,6 +549,99 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users);
+  }
+
+  // Partner Service Tickets
+  async createPartnerServiceTicket(insertTicket: InsertPartnerServiceTicket): Promise<PartnerServiceTicket> {
+    const [ticket] = await db
+      .insert(partnerServiceTickets)
+      .values({
+        ...insertTicket,
+        matchId: insertTicket.matchId || null,
+        projectId: insertTicket.projectId || null,
+        clientName: insertTicket.clientName || null,
+        category: insertTicket.category || "general",
+        priority: insertTicket.priority || "medium",
+        status: insertTicket.status || "incoming",
+        assignedTo: insertTicket.assignedTo || null,
+        attachmentUrl: insertTicket.attachmentUrl || null,
+        resolution: insertTicket.resolution || null,
+      })
+      .returning();
+    return ticket;
+  }
+
+  async getPartnerServiceTicket(id: string): Promise<PartnerServiceTicket | undefined> {
+    const [ticket] = await db.select().from(partnerServiceTickets).where(eq(partnerServiceTickets.id, id));
+    return ticket;
+  }
+
+  async getPartnerServiceTickets(partnerId: string): Promise<PartnerServiceTicket[]> {
+    return await db.select().from(partnerServiceTickets).where(eq(partnerServiceTickets.partnerId, partnerId));
+  }
+
+  async updatePartnerServiceTicket(id: string, updates: Partial<PartnerServiceTicket>): Promise<PartnerServiceTicket | undefined> {
+    const [ticket] = await db
+      .update(partnerServiceTickets)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(partnerServiceTickets.id, id))
+      .returning();
+    return ticket;
+  }
+
+  // Partner Service Ticket Notes
+  async createPartnerServiceTicketNote(insertNote: InsertPartnerServiceTicketNote): Promise<PartnerServiceTicketNote> {
+    const [note] = await db
+      .insert(partnerServiceTicketNotes)
+      .values(insertNote)
+      .returning();
+    return note;
+  }
+
+  async getPartnerServiceTicketNotes(ticketId: string): Promise<PartnerServiceTicketNote[]> {
+    return await db.select().from(partnerServiceTicketNotes).where(eq(partnerServiceTicketNotes.ticketId, ticketId));
+  }
+
+  // Partner Sales Opportunities
+  async createPartnerSalesOpportunity(insertOpportunity: InsertPartnerSalesOpportunity): Promise<PartnerSalesOpportunity> {
+    const [opportunity] = await db
+      .insert(partnerSalesOpportunities)
+      .values({
+        ...insertOpportunity,
+        clientName: insertOpportunity.clientName || null,
+        projectTitle: insertOpportunity.projectTitle || null,
+        stage: insertOpportunity.stage || "new_match",
+        expectedRevenue: insertOpportunity.expectedRevenue || null,
+        probability: insertOpportunity.probability || 0,
+        expectedCloseDate: insertOpportunity.expectedCloseDate || null,
+        notes: insertOpportunity.notes || null,
+        lostReason: insertOpportunity.lostReason || null,
+      })
+      .returning();
+    return opportunity;
+  }
+
+  async getPartnerSalesOpportunity(id: string): Promise<PartnerSalesOpportunity | undefined> {
+    const [opportunity] = await db.select().from(partnerSalesOpportunities).where(eq(partnerSalesOpportunities.id, id));
+    return opportunity;
+  }
+
+  async getPartnerSalesOpportunities(partnerId: string): Promise<PartnerSalesOpportunity[]> {
+    return await db.select().from(partnerSalesOpportunities).where(eq(partnerSalesOpportunities.partnerId, partnerId));
+  }
+
+  async getPartnerSalesOpportunityByMatch(partnerId: string, matchId: string): Promise<PartnerSalesOpportunity | undefined> {
+    const all = await db.select().from(partnerSalesOpportunities).where(eq(partnerSalesOpportunities.partnerId, partnerId));
+    return all.find(o => o.matchId === matchId);
+  }
+
+  async updatePartnerSalesOpportunity(id: string, updates: Partial<PartnerSalesOpportunity>): Promise<PartnerSalesOpportunity | undefined> {
+    const [opportunity] = await db
+      .update(partnerSalesOpportunities)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(partnerSalesOpportunities.id, id))
+      .returning();
+    return opportunity;
   }
 }
 
