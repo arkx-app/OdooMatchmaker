@@ -1,0 +1,106 @@
+Replit Prompt: Centralized Helpdesk and Dashboard System
+
+Objective:
+Create a fully centralized dashboard system with clients, partners, and admin users that includes a single unified helpdesk, swiping/matching, messaging, partner analytics, and user settings. All functionality should be connected across dashboards.
+
+Requirements:
+
+User Dashboards
+
+Create three types of dashboards: Client, Partner, Admin.
+
+Each dashboard must have a settings section where the user can view and update their details (description, goals, industry, etc.) and change their password.
+
+Dashboards must have a back arrow/navigation so users can easily return to the main dashboard from any page.
+
+Centralized Helpdesk
+
+There is only one helpdesk system for all dashboards (no separate “service” or “support” tickets).
+
+Clients and partners can create helpdesk tickets from their dashboards.
+
+All tickets are automatically stored in a centralized database visible in the admin dashboard.
+
+Admins can:
+
+View all tickets from all users.
+
+Change the ticket status (Incoming → Assigned → Resolved).
+
+Reply to tickets.
+
+Replies from admins automatically sync back to the ticket creator’s dashboard.
+
+All dashboards should always show tickets consistently from this single system.
+
+Swiping and Matching (Clients ↔ Partners)
+
+Clients can swipe through partners, see their details, like/dislike them.
+
+Partners can swipe through clients, like/dislike them.
+
+When a mutual like occurs, a match is created.
+
+Matches are recorded in a central database (matches_db) for analytics.
+
+Once matched, clients and partners can start messaging each other.
+
+Messaging
+
+Add a messaging tab in both client and partner dashboards.
+
+Users can reopen messages, send new messages, and continue conversations.
+
+Future-proof the system for video calls or phone calls, even if not implemented yet.
+
+Admins can also message users directly.
+
+Messages sent by partners increment a message counter used for metrics.
+
+Partner Metrics & Admin Analytics
+
+Admin dashboard should display partner performance metrics:
+
+Number of matches
+
+Number of messages sent
+
+Number of tickets created
+
+Activity score (sum of all above)
+
+Display partners ranked by activity score in descending order.
+
+Integration & Real-Time Updates
+
+All features must be interconnected:
+
+Helpdesk tickets sync between user dashboards and admin.
+
+Matches and messages update partner metrics automatically.
+
+There should be no duplicate features. Everything is centralized and consistent.
+
+Priority Features
+
+The swiping mechanism is the most important part of client and partner dashboards and should always be visible first.
+
+User settings should be easy to access from all dashboards.
+
+Navigation should be intuitive and consistent.
+
+Testing / Simulation
+
+Include endpoints or functionality to simulate matches and messages to verify metrics.
+
+Ensure that any ticket, message, or match is reflected correctly in admin analytics.
+
+Instructions for Replit:
+
+Build a centralized backend managing all tickets, matches, messages, and user settings.
+
+Connect client, partner, and admin dashboards to this backend.
+
+Make sure all updates propagate in real time across dashboards.
+
+Make dashboards user-friendly, with navigation and settings accessible.

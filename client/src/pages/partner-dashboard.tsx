@@ -5,7 +5,7 @@ import {
   Home, ThumbsUp, Bookmark, Users, ArrowLeft, LogOut, Award, 
   Star, Building2, MessageCircle, Calendar, FileText,
   Clock, Sparkles, ChevronRight, Search, Filter, X,
-  Briefcase, Settings, HelpCircle, Globe, 
+  Briefcase, Settings as SettingsIcon, HelpCircle, Globe, 
   DollarSign, Shield, ChevronDown, CheckCircle2, AlertCircle,
   Zap, TrendingUp, BarChart3, Target, Layers, ArrowRight,
   Edit, Plus, ExternalLink, Mail, Phone, MapPin, BadgeCheck,
@@ -861,6 +861,7 @@ export default function PartnerDashboard() {
     { id: "sales-pipeline", label: "Sales Pipeline", icon: PiggyBank },
     { id: "support", label: "Support", icon: HelpCircle, badge: supportNotificationCount, isNotification: true },
     { id: "profile", label: "My Profile", icon: User },
+    { id: "settings", label: "Settings", icon: SettingsIcon },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
   ];
 
@@ -1533,6 +1534,145 @@ export default function PartnerDashboard() {
               </div>
             ) : activeTab === "support" ? (
               <HelpdeskSection userType="partner" />
+            ) : activeTab === "settings" ? (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-semibold">Settings</h2>
+                  <p className="text-muted-foreground">Manage your account and preferences</p>
+                </div>
+
+                <div className="grid lg:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <User className="w-5 h-5" />
+                        Profile Information
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Contact Name</Label>
+                        <Input value={partnerProfile?.name || ""} readOnly />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email</Label>
+                        <Input value={partnerProfile?.email || ""} readOnly />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Company</Label>
+                        <Input value={partnerProfile?.company || ""} readOnly />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Industry</Label>
+                        <Input value={partnerProfile?.industry || ""} readOnly />
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        className="mt-4" 
+                        onClick={() => setShowProfileDialog(true)}
+                        data-testid="button-edit-profile"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Profile
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Mail className="w-5 h-5" />
+                        Notification Preferences
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-medium">New Lead Notifications</p>
+                          <p className="text-sm text-muted-foreground">Get notified when clients like your profile</p>
+                        </div>
+                        <Badge variant="secondary">Enabled</Badge>
+                      </div>
+                      <Separator />
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-medium">Match Notifications</p>
+                          <p className="text-sm text-muted-foreground">Get notified when you have a new match</p>
+                        </div>
+                        <Badge variant="secondary">Enabled</Badge>
+                      </div>
+                      <Separator />
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-medium">Message Notifications</p>
+                          <p className="text-sm text-muted-foreground">Get notified when you receive a message</p>
+                        </div>
+                        <Badge variant="secondary">Enabled</Badge>
+                      </div>
+                      <Separator />
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-medium">Weekly Summary</p>
+                          <p className="text-sm text-muted-foreground">Receive a weekly summary of leads and activity</p>
+                        </div>
+                        <Badge variant="outline">Disabled</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Shield className="w-5 h-5" />
+                        Privacy & Security
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-medium">Profile Visibility</p>
+                          <p className="text-sm text-muted-foreground">Who can see your partner profile</p>
+                        </div>
+                        <Badge variant="secondary">All Clients</Badge>
+                      </div>
+                      <Separator />
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="font-medium">Two-Factor Authentication</p>
+                          <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
+                        </div>
+                        <Button variant="outline" size="sm">Enable</Button>
+                      </div>
+                      <Separator />
+                      <Button variant="outline" className="text-destructive" data-testid="button-change-password">
+                        Change Password
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-destructive">
+                        <AlertCircle className="w-5 h-5" />
+                        Danger Zone
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-sm text-muted-foreground">
+                        These actions are irreversible. Please proceed with caution.
+                      </p>
+                      <div className="flex gap-4 flex-wrap">
+                        <Button variant="outline" className="text-destructive" data-testid="button-export-data">
+                          Export My Data
+                        </Button>
+                        <Button variant="destructive" data-testid="button-delete-account">
+                          Delete Account
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
             ) : null}
           </main>
         </div>
