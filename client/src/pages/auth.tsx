@@ -42,7 +42,10 @@ export default function AuthPage() {
       console.log(`[AUTH] Login successful for: ${result.email}`);
       console.log(`[AUTH] Role received from server: "${result.role}"`);
       
-      if (result.role === "partner") {
+      if (result.role === "admin") {
+        console.log(`[AUTH] Admin user, redirecting to: /admin`);
+        setLocation("/admin");
+      } else if (result.role === "partner") {
         console.log(`[AUTH] Redirecting to: /partner/dashboard`);
         setLocation("/partner/dashboard");
       } else if (result.role === "client") {
