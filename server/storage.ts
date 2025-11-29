@@ -15,7 +15,7 @@ import {
   type PartnerSalesOpportunity, type InsertPartnerSalesOpportunity,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 // Comprehensive Admin Analytics Types
@@ -135,11 +135,13 @@ export interface IStorage {
   createSupportTicket(ticket: InsertSupportTicket): Promise<SupportTicket>;
   getSupportTicket(id: string): Promise<SupportTicket | undefined>;
   getAllSupportTickets(): Promise<SupportTicket[]>;
+  getSupportTicketsByUser(userId: string): Promise<SupportTicket[]>;
   updateSupportTicket(id: string, updates: Partial<SupportTicket>): Promise<SupportTicket | undefined>;
   
-  // Ticket Comments
+  // Ticket Comments (Messages)
   createTicketComment(comment: InsertTicketComment): Promise<TicketComment>;
   getTicketComments(ticketId: string): Promise<TicketComment[]>;
+  getPublicTicketComments(ticketId: string): Promise<TicketComment[]>;
   
   // Admin Users (for assignment)
   getAdminUsers(): Promise<User[]>;
@@ -537,6 +539,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(supportTickets);
   }
 
+  async getSupportTicketsByUser(userId: string): Promise<SupportTicket[]> {
+    return await db.select().from(supportTickets).where(eq(supportTickets.userId, userId));
+  }
+
   async updateSupportTicket(id: string, updates: Partial<SupportTicket>): Promise<SupportTicket | undefined> {
     const [ticket] = await db
       .update(supportTickets)
@@ -559,6 +565,14 @@ export class DatabaseStorage implements IStorage {
 
   async getTicketComments(ticketId: string): Promise<TicketComment[]> {
     return await db.select().from(ticketComments).where(eq(ticketComments.ticketId, ticketId));
+  }
+
+  async getPublicTicketComments(ticketId: string): Promise<TicketComment[]> {
+    return await db.select().from(ticketComments)
+      .where(and(
+        eq(ticketComments.ticketId, ticketId),
+        eq(ticketComments.isInternal, false)
+      ));
   }
 
   async getAdminUsers(): Promise<User[]> {

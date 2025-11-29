@@ -855,6 +855,192 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get current user's support tickets (clients and partners can view their own)
+  app.get("/api/tickets/my", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const tickets = await storage.getSupportTicketsByUser(userId);
+      // Sort by updatedAt descending (most recent first)
+      tickets.sort((a, b) => {
+        const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+        const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching user tickets:", error);
+      res.status(500).json({ message: "Failed to fetch tickets" });
+    }
+  });
+
+  // Get a specific ticket (owner or admin)
+  app.get("/api/tickets/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const ticket = await storage.getSupportTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      // Check if user is owner or admin
+      const user = await storage.getUser(userId);
+      if (ticket.userId !== userId && user?.role !== "admin") {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error fetching ticket:", error);
+      res.status(500).json({ message: "Failed to fetch ticket" });
+    }
+  });
+
+  // Get messages for a ticket (public messages for owner, all for admin)
+  app.get("/api/tickets/:id/messages", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const ticket = await storage.getSupportTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      const user = await storage.getUser(userId);
+      const isAdmin = user?.role === "admin";
+      const isOwner = ticket.userId === userId;
+
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Admins see all comments, users see only public (non-internal) comments
+      const comments = isAdmin 
+        ? await storage.getTicketComments(req.params.id)
+        : await storage.getPublicTicketComments(req.params.id);
+
+      // Sort by createdAt ascending (oldest first for chat)
+      comments.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      });
+
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching ticket messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  // Add a message to a ticket (owner or admin)
+  app.post("/api/tickets/:id/messages", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const ticket = await storage.getSupportTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const isAdmin = user.role === "admin";
+      const isOwner = ticket.userId === userId;
+
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const { content, isInternal } = req.body;
+      if (!content || typeof content !== "string" || !content.trim()) {
+        return res.status(400).json({ message: "Message content is required" });
+      }
+
+      // Only admins can create internal notes
+      const finalIsInternal = isAdmin ? (isInternal ?? false) : false;
+
+      const comment = await storage.createTicketComment({
+        ticketId: req.params.id,
+        userId: userId,
+        userName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+        content: content.trim(),
+        isInternal: finalIsInternal,
+      });
+
+      // Update the ticket's updatedAt timestamp
+      await storage.updateSupportTicket(req.params.id, {});
+
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Error creating ticket message:", error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  // Update ticket status (owner or admin)
+  app.patch("/api/tickets/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const ticket = await storage.getSupportTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      const user = await storage.getUser(userId);
+      const isAdmin = user?.role === "admin";
+      const isOwner = ticket.userId === userId;
+
+      if (!isOwner && !isAdmin) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Users can only close their own tickets, admins can update everything
+      const allowedUserUpdates = ["status"];
+      const updates: any = {};
+
+      if (isAdmin) {
+        // Admins can update any field
+        Object.assign(updates, req.body);
+        if (updates.status === "fixed") {
+          updates.resolvedAt = new Date();
+        }
+      } else {
+        // Users can only mark as resolved (close their own ticket)
+        if (req.body.status === "fixed") {
+          updates.status = "fixed";
+          updates.resolvedAt = new Date();
+        }
+      }
+
+      const updatedTicket = await storage.updateSupportTicket(req.params.id, updates);
+      res.json(updatedTicket);
+    } catch (error) {
+      console.error("Error updating ticket:", error);
+      res.status(500).json({ message: "Failed to update ticket" });
+    }
+  });
+
   // Get all clients and partners count (for admin dashboard quick stats)
   app.get("/api/admin/stats", isAuthenticated, isAdmin, async (req, res) => {
     try {
