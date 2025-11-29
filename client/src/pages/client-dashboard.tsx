@@ -8,8 +8,7 @@ import {
   Briefcase, Settings, HelpCircle, BookOpen, Globe, 
   DollarSign, Shield, ChevronDown, CheckCircle2, AlertCircle,
   Zap, TrendingUp, BarChart3, Target, Layers, ArrowRight,
-  Edit, Plus, ExternalLink, Mail, Phone, MapPin, BadgeCheck,
-  Lock, Crown
+  Edit, Plus, ExternalLink, Mail, Phone, MapPin, BadgeCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

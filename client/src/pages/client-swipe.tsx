@@ -5,7 +5,7 @@ import {
   FolderPlus, Clock, DollarSign, CheckCircle2, AlertCircle, Loader2, Plus,
   Briefcase, ChevronDown, ChevronUp, ExternalLink, LayoutDashboard, 
   Users, BarChart3, Settings, Info, Star, MapPin, Calendar, Building2, Globe,
-  Lock, Crown, Zap, User, Search
+  Zap, User, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
