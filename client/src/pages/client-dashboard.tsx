@@ -794,7 +794,7 @@ export default function ClientDashboard() {
     { id: "saved", label: "Saved Partners", icon: Bookmark, count: savedPartners.length },
     { id: "matches", label: "Matches", icon: Users, count: confirmedMatches.length },
     { id: "messages", label: "Messages", icon: MessageCircle },
-    { id: "support", label: "Support", icon: HelpCircle, count: supportNotificationCount, isNotification: true },
+    { id: "helpdesk", label: "Helpdesk", icon: HelpCircle, count: supportNotificationCount, isNotification: true },
     { id: "learn", label: "Learn Odoo", icon: BookOpen },
     { id: "settings", label: "Settings", icon: Settings },
   ];
@@ -1437,7 +1437,7 @@ export default function ClientDashboard() {
               </div>
             )}
 
-            {activeSection === "support" && (
+            {activeSection === "helpdesk" && (
               <HelpdeskSection userType="client" />
             )}
 

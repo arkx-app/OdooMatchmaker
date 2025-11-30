@@ -1,0 +1,97 @@
+Replit Master Prompt: Centralized Odoo Matchmaking & Dashboard System
+
+Objective:
+Build a fully integrated platform with clients, partners, and admins, featuring a centralized helpdesk, Tinder-style matchmaking, messaging, analytics, and user settings, with seamless navigation and immediate dashboard access.
+
+Requirements
+1. Dashboards & Login
+
+Create three dashboards: Client, Partner, Admin.
+
+Immediately show the dashboard after login; no landing pages, tutorials, or intermediate steps.
+
+All dashboards should have a settings section where users can view/update their details (description, goals, industry, etc.) and change their password.
+
+2. Centralized Helpdesk
+
+There is only one helpdesk system for the entire platform (no separate service/support tickets).
+
+Clients and partners can create tickets from their dashboards.
+
+Tickets are stored in a centralized database visible from all admin accounts.
+
+Admins can:
+
+View all tickets from all users
+
+Update ticket status (Incoming → Assigned → Resolved)
+
+Reply to tickets
+
+Admin replies sync back to the ticket creator’s dashboard.
+
+All dashboards show the same tickets consistently; no duplicate ticketing systems.
+
+3. Swiping / Matchmaking (Tinder-style)
+
+The swiping/matchmaking feature is the first thing users see after login for clients and partners.
+
+Clients see partners with details and can like/dislike them.
+
+Partners see clients with details and can like/dislike them.
+
+Mutual likes result in a match, added to an Active Matches page for both users.
+
+Swiping is centralized, consistent, and records all likes/matches in a central database.
+
+4. Messaging
+
+Both clients and partners have a messaging tab.
+
+Users can reopen messages, start new conversations, and continue chatting.
+
+Admins can also send messages directly to any user.
+
+Future-proof the system for video calls or phone calls.
+
+Partner messages are counted for analytics/metrics.
+
+5. Navigation
+
+All subpages/features within a dashboard must have a back arrow/home button to return to the main dashboard.
+
+Navigation is consistent and intuitive across clients, partners, and admins.
+
+6. Partner Metrics & Admin Analytics
+
+Admin dashboard shows partner performance metrics:
+
+Number of matches
+
+Number of messages sent
+
+Number of tickets created
+
+Activity score (sum of tickets + matches + messages)
+
+Metrics are ranked by activity score in descending order.
+
+7. Integration & Real-Time Updates
+
+All features are interconnected:
+
+Helpdesk tickets sync between user dashboards and admin
+
+Matches update the Active Matches tab in real-time
+
+Messages update counts and partner metrics immediately
+
+Ensure no duplicate features; everything is centralized and consistent.
+
+8. Priority Features
+
+Swiping/matchmaking is the core feature and must be the first thing users see.
+
+Navigation and settings are easy to access from any page.
+
+Helpdesk, matches, and messages are fully centralized and synchronized.

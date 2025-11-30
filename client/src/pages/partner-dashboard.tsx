@@ -77,7 +77,7 @@ import { useGamification } from "@/hooks/use-gamification";
 import { AchievementsList } from "@/components/achievement-badge";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Partner, Match, Client, Brief, Message, PartnerServiceTicket, PartnerSalesOpportunity, PartnerServiceTicketNote } from "@shared/schema";
+import type { Partner, Match, Client, Brief, Message, PartnerSalesOpportunity } from "@shared/schema";
 
 interface EnrichedMatch extends Match {
   client?: Client;
@@ -433,23 +433,9 @@ export default function PartnerDashboard() {
     website: "",
   });
 
-  // Pipeline state
-  const [showServiceTicketDialog, setShowServiceTicketDialog] = useState(false);
+  // Sales Pipeline state
   const [showSalesOpportunityDialog, setShowSalesOpportunityDialog] = useState(false);
-  const [selectedServiceTicket, setSelectedServiceTicket] = useState<PartnerServiceTicket | null>(null);
   const [selectedSalesOpportunity, setSelectedSalesOpportunity] = useState<PartnerSalesOpportunity | null>(null);
-  const [ticketNotes, setTicketNotes] = useState<PartnerServiceTicketNote[]>([]);
-  const [newTicketNote, setNewTicketNote] = useState("");
-
-  const [serviceTicketForm, setServiceTicketForm] = useState({
-    title: "",
-    description: "",
-    category: "general",
-    priority: "medium",
-    matchId: "",
-    projectId: "",
-    clientName: "",
-  });
 
   const [salesOpportunityForm, setSalesOpportunityForm] = useState({
     matchId: "",
@@ -571,13 +557,6 @@ export default function PartnerDashboard() {
     refetchInterval: 3000,
   });
 
-  // Partner Service Tickets
-  const { data: serviceTickets = [], isLoading: serviceTicketsLoading } = useQuery<PartnerServiceTicket[]>({
-    queryKey: ["/api/partner/service-tickets"],
-    enabled: !!partnerId,
-    refetchInterval: 10000,
-  });
-
   // Partner Sales Opportunities
   const { data: salesOpportunities = [], isLoading: salesOpportunitiesLoading } = useQuery<PartnerSalesOpportunity[]>({
     queryKey: ["/api/partner/sales-opportunities"],
@@ -653,52 +632,6 @@ export default function PartnerDashboard() {
         description: "Failed to update profile. Please try again.",
         variant: "destructive",
       });
-    },
-  });
-
-  // Service Ticket Mutations
-  const createServiceTicketMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const res = await apiRequest("POST", "/api/partner/service-tickets", data);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/partner/service-tickets"] });
-      toast({ title: "Ticket Created", description: "Service ticket has been created." });
-      setShowServiceTicketDialog(false);
-      setServiceTicketForm({ title: "", description: "", category: "general", priority: "medium", matchId: "", projectId: "", clientName: "" });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to create ticket.", variant: "destructive" });
-    },
-  });
-
-  const updateServiceTicketMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const res = await apiRequest("PATCH", `/api/partner/service-tickets/${id}`, data);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/partner/service-tickets"] });
-      toast({ title: "Ticket Updated", description: "Service ticket has been updated." });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to update ticket.", variant: "destructive" });
-    },
-  });
-
-  const addTicketNoteMutation = useMutation({
-    mutationFn: async ({ ticketId, content }: { ticketId: string; content: string }) => {
-      const res = await apiRequest("POST", `/api/partner/service-tickets/${ticketId}/notes`, { content });
-      return res.json();
-    },
-    onSuccess: (data) => {
-      setTicketNotes([...ticketNotes, data]);
-      setNewTicketNote("");
-      toast({ title: "Note Added", description: "Your note has been added." });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to add note.", variant: "destructive" });
     },
   });
 
@@ -857,9 +790,8 @@ export default function PartnerDashboard() {
     { id: "likes", label: "New Likes", icon: Inbox, badge: newLikes.length },
     { id: "matches", label: "Active Matches", icon: Users, badge: mutualMatches.length },
     { id: "messages", label: "Messages", icon: MessageCircle },
-    { id: "service-tickets", label: "Service Tickets", icon: Ticket },
     { id: "sales-pipeline", label: "Sales Pipeline", icon: PiggyBank },
-    { id: "support", label: "Support", icon: HelpCircle, badge: supportNotificationCount, isNotification: true },
+    { id: "helpdesk", label: "Helpdesk", icon: HelpCircle, badge: supportNotificationCount, isNotification: true },
     { id: "profile", label: "My Profile", icon: User },
     { id: "settings", label: "Settings", icon: SettingsIcon },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
@@ -1338,100 +1270,6 @@ export default function PartnerDashboard() {
                   </div>
                 )}
               </div>
-            ) : activeTab === "service-tickets" ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div>
-                    <h2 className="text-2xl font-bold">Service Tickets</h2>
-                    <p className="text-muted-foreground">
-                      Track and manage service issues for your matches and projects
-                    </p>
-                  </div>
-                  <Button onClick={() => setShowServiceTicketDialog(true)} data-testid="button-create-ticket">
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Ticket
-                  </Button>
-                </div>
-
-                {serviceTicketsLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                ) : serviceTickets.length === 0 ? (
-                  <Card className="p-12 text-center">
-                    <Ticket className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                    <h3 className="text-lg font-semibold mb-2">No service tickets</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Create tickets to track issues with your matches and projects.
-                    </p>
-                    <Button onClick={() => setShowServiceTicketDialog(true)}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create First Ticket
-                    </Button>
-                  </Card>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    {["incoming", "assigned", "in_progress", "resolved", "issue"].map((phase) => {
-                      const phaseTickets = serviceTickets.filter((t) => t.status === phase);
-                      const phaseConfig: Record<string, { label: string; icon: typeof Inbox; color: string }> = {
-                        incoming: { label: "Incoming", icon: Inbox, color: "from-blue-500 to-blue-600" },
-                        assigned: { label: "Assigned", icon: User, color: "from-purple-500 to-purple-600" },
-                        in_progress: { label: "In Progress", icon: Play, color: "from-orange-500 to-orange-600" },
-                        resolved: { label: "Resolved", icon: CircleCheck, color: "from-green-500 to-green-600" },
-                        issue: { label: "Issue", icon: AlertTriangle, color: "from-red-500 to-red-600" },
-                      };
-                      const config = phaseConfig[phase];
-                      const PhaseIcon = config.icon;
-                      return (
-                        <div key={phase} className="space-y-2">
-                          <div className="flex items-center gap-2 p-2">
-                            <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${config.color} flex items-center justify-center text-white`}>
-                              <PhaseIcon className="w-3 h-3" />
-                            </div>
-                            <span className="font-medium text-sm">{config.label}</span>
-                            <Badge variant="secondary" className="ml-auto text-xs">{phaseTickets.length}</Badge>
-                          </div>
-                          <div className="space-y-2 min-h-[200px] bg-muted/30 rounded-md p-2">
-                            {phaseTickets.map((ticket) => (
-                              <Card 
-                                key={ticket.id} 
-                                className="overflow-visible hover-elevate cursor-pointer"
-                                onClick={async () => {
-                                  setSelectedServiceTicket(ticket);
-                                  try {
-                                    const res = await fetch(`/api/partner/service-tickets/${ticket.id}/notes`, { credentials: "include" });
-                                    const notes = await res.json();
-                                    setTicketNotes(notes);
-                                  } catch { setTicketNotes([]); }
-                                }}
-                                data-testid={`card-ticket-${ticket.id}`}
-                              >
-                                <CardContent className="p-3">
-                                  <div className="flex items-start justify-between gap-2 mb-1">
-                                    <h4 className="font-medium text-sm line-clamp-1">{ticket.title}</h4>
-                                    <Badge 
-                                      variant={ticket.priority === "high" ? "destructive" : ticket.priority === "medium" ? "secondary" : "outline"} 
-                                      className="text-xs shrink-0"
-                                    >
-                                      {ticket.priority}
-                                    </Badge>
-                                  </div>
-                                  <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{ticket.description}</p>
-                                  {ticket.clientName && (
-                                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                      <User className="w-3 h-3" /> {ticket.clientName}
-                                    </p>
-                                  )}
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
             ) : activeTab === "sales-pipeline" ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -1532,7 +1370,7 @@ export default function PartnerDashboard() {
                   </div>
                 )}
               </div>
-            ) : activeTab === "support" ? (
+            ) : activeTab === "helpdesk" ? (
               <HelpdeskSection userType="partner" />
             ) : activeTab === "settings" ? (
               <div className="space-y-6">
@@ -2097,196 +1935,6 @@ export default function PartnerDashboard() {
               Save Profile
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Service Ticket Create Dialog */}
-      <Dialog open={showServiceTicketDialog} onOpenChange={setShowServiceTicketDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create Service Ticket</DialogTitle>
-            <DialogDescription>
-              Track a service issue for a match or project
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="ticketTitle">Title</Label>
-              <Input
-                id="ticketTitle"
-                placeholder="Brief description of the issue"
-                value={serviceTicketForm.title}
-                onChange={(e) => setServiceTicketForm({ ...serviceTicketForm, title: e.target.value })}
-                data-testid="input-ticket-title"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ticketDescription">Description</Label>
-              <Textarea
-                id="ticketDescription"
-                placeholder="Detailed description of the issue..."
-                value={serviceTicketForm.description}
-                onChange={(e) => setServiceTicketForm({ ...serviceTicketForm, description: e.target.value })}
-                rows={3}
-                data-testid="input-ticket-description"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="ticketCategory">Category</Label>
-                <Select
-                  value={serviceTicketForm.category}
-                  onValueChange={(v) => setServiceTicketForm({ ...serviceTicketForm, category: v })}
-                >
-                  <SelectTrigger data-testid="select-ticket-category">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="general">General</SelectItem>
-                    <SelectItem value="technical">Technical</SelectItem>
-                    <SelectItem value="billing">Billing</SelectItem>
-                    <SelectItem value="communication">Communication</SelectItem>
-                    <SelectItem value="scope">Scope Change</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="ticketPriority">Priority</Label>
-                <Select
-                  value={serviceTicketForm.priority}
-                  onValueChange={(v) => setServiceTicketForm({ ...serviceTicketForm, priority: v })}
-                >
-                  <SelectTrigger data-testid="select-ticket-priority">
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ticketClient">Client Name (optional)</Label>
-              <Input
-                id="ticketClient"
-                placeholder="Client name for reference"
-                value={serviceTicketForm.clientName}
-                onChange={(e) => setServiceTicketForm({ ...serviceTicketForm, clientName: e.target.value })}
-                data-testid="input-ticket-client"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowServiceTicketDialog(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => createServiceTicketMutation.mutate(serviceTicketForm)}
-              disabled={createServiceTicketMutation.isPending || !serviceTicketForm.title}
-              data-testid="button-create-service-ticket"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Ticket
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Service Ticket Detail Dialog */}
-      <Dialog open={!!selectedServiceTicket} onOpenChange={(open) => !open && setSelectedServiceTicket(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          {selectedServiceTicket && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Ticket className="w-5 h-5" />
-                  {selectedServiceTicket.title}
-                </DialogTitle>
-                <DialogDescription>
-                  Manage this service ticket
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant={selectedServiceTicket.priority === "high" ? "destructive" : selectedServiceTicket.priority === "medium" ? "secondary" : "outline"}>
-                    {selectedServiceTicket.priority} priority
-                  </Badge>
-                  <Badge variant="outline">{selectedServiceTicket.category}</Badge>
-                  {selectedServiceTicket.clientName && (
-                    <Badge variant="secondary">{selectedServiceTicket.clientName}</Badge>
-                  )}
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Description</Label>
-                  <p className="text-sm mt-1">{selectedServiceTicket.description}</p>
-                </div>
-                <Separator />
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select
-                    value={selectedServiceTicket.status}
-                    onValueChange={(v) => {
-                      updateServiceTicketMutation.mutate({
-                        id: selectedServiceTicket.id,
-                        data: { status: v },
-                      });
-                      setSelectedServiceTicket({ ...selectedServiceTicket, status: v as any });
-                    }}
-                  >
-                    <SelectTrigger data-testid="select-ticket-status">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="incoming">Incoming</SelectItem>
-                      <SelectItem value="assigned">Assigned</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="resolved">Resolved</SelectItem>
-                      <SelectItem value="issue">Issue</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Separator />
-                <div className="space-y-3">
-                  <Label>Notes</Label>
-                  <ScrollArea className="h-[150px] border rounded-md p-3">
-                    {ticketNotes.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No notes yet</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {ticketNotes.map((note) => (
-                          <div key={note.id} className="text-sm">
-                            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-                              <span className="font-medium">{note.userName}</span>
-                              <span>{note.createdAt ? new Date(note.createdAt).toLocaleString() : ""}</span>
-                            </div>
-                            <p>{note.content}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Add a note..."
-                      value={newTicketNote}
-                      onChange={(e) => setNewTicketNote(e.target.value)}
-                      data-testid="input-ticket-note"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={() => addTicketNoteMutation.mutate({ ticketId: selectedServiceTicket.id, content: newTicketNote })}
-                      disabled={!newTicketNote.trim() || addTicketNoteMutation.isPending}
-                      data-testid="button-add-note"
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
         </DialogContent>
       </Dialog>
 
