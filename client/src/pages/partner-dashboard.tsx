@@ -502,17 +502,6 @@ export default function PartnerDashboard() {
     }
   }, [userLoading, currentUser, navigate]);
 
-  // Redirect to swipe page on first session load - swiping is the primary feature
-  // Only redirect if: auth loaded, has partner profile, role is partner
-  useEffect(() => {
-    if (!userLoading && currentUser && partnerProfile && currentUser.role === "partner") {
-      const hasVisitedDashboard = sessionStorage.getItem("partner_dashboard_visited");
-      if (!hasVisitedDashboard) {
-        sessionStorage.setItem("partner_dashboard_visited", "true");
-        navigate("/partner/swipe");
-      }
-    }
-  }, [userLoading, currentUser, partnerProfile, navigate]);
 
   useEffect(() => {
     if (partnerProfile?.id) {

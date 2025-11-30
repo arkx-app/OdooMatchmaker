@@ -27,7 +27,14 @@ export default function AuthLogin() {
       localStorage.setItem("profile", JSON.stringify(response.profile));
 
       toast({ title: "Login successful!" });
-      navigate(response.user.role === "partner" ? "/partner/dashboard" : "/client/briefs");
+      // Redirect directly to dashboard based on role
+      if (response.user.role === "admin") {
+        navigate("/admin");
+      } else if (response.user.role === "partner") {
+        navigate("/partner/dashboard");
+      } else {
+        navigate("/client/dashboard");
+      }
     } catch (error) {
       toast({ title: "Login failed", variant: "destructive" });
     } finally {

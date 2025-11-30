@@ -565,17 +565,6 @@ export default function ClientDashboard() {
     }
   }, [authLoading, isAuthenticated, user?.role, navigate]);
 
-  // Redirect to swipe page on first session load - swiping is the primary feature
-  // Only redirect if: auth loaded, authenticated, has client profile, role is client
-  useEffect(() => {
-    if (!authLoading && isAuthenticated && user?.profile && user?.role === "client") {
-      const hasVisitedDashboard = sessionStorage.getItem("client_dashboard_visited");
-      if (!hasVisitedDashboard) {
-        sessionStorage.setItem("client_dashboard_visited", "true");
-        navigate("/client/swipe");
-      }
-    }
-  }, [authLoading, isAuthenticated, user?.profile, user?.role, navigate]);
 
   const handleLogout = async () => {
     await logout();
