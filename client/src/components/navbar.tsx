@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Sparkles, User, LayoutDashboard, UserCircle, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,10 +12,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import LanguageSelector from "./language-selector";
 
 export default function Navbar() {
   const [location, setLocation] = useLocation();
   const { user, isAuthenticated, logout, isLoading } = useAuth();
+  const { t } = useTranslation();
 
   const isActive = (path: string) => {
     if (path === "/") {
@@ -88,7 +91,7 @@ export default function Navbar() {
                 isActive("/") ? "after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-partner-from" : ""
               }`}
             >
-              Home
+              {t('nav.home')}
             </Link>
             <Link 
               href="/pricing" 
@@ -96,7 +99,7 @@ export default function Navbar() {
                 isActive("/pricing") ? "after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-partner-from" : ""
               }`}
             >
-              Pricing
+              {t('nav.pricing')}
             </Link>
             <Link 
               href="/get-started" 
@@ -104,12 +107,13 @@ export default function Navbar() {
                 isActive("/get-started") ? "after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-partner-from" : ""
               }`}
             >
-              Get Started
+              {t('nav.getStarted')}
             </Link>
           </div>
 
-          {/* Auth Section - User Menu or Login/Signup */}
-          <div className="flex items-center gap-3">
+          {/* Auth Section - Language Selector + User Menu or Login/Signup */}
+          <div className="flex items-center gap-2">
+            <LanguageSelector />
             {!isLoading && isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -144,7 +148,7 @@ export default function Navbar() {
                     data-testid="menu-my-dashboard"
                   >
                     <LayoutDashboard className="mr-2 h-4 w-4" />
-                    My Dashboard
+                    {t('nav.dashboard')}
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => setLocation(getProfilePath())}
@@ -152,7 +156,7 @@ export default function Navbar() {
                     data-testid="menu-my-profile"
                   >
                     <UserCircle className="mr-2 h-4 w-4" />
-                    My Profile
+                    {t('nav.profile')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
@@ -161,7 +165,7 @@ export default function Navbar() {
                     data-testid="menu-logout"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    Logout
+                    {t('nav.logout')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -169,12 +173,12 @@ export default function Navbar() {
               <>
                 <Link href="/auth">
                   <Button variant="ghost" className="h-9 hidden sm:flex" data-testid="button-login">
-                    Login
+                    {t('nav.login')}
                   </Button>
                 </Link>
                 <Link href="/get-started?signup=true">
                   <Button className="h-9 bg-gradient-to-r from-partner-from to-partner-to text-white hover:opacity-90" data-testid="button-signup">
-                    Sign Up
+                    {t('nav.signUp')}
                   </Button>
                 </Link>
               </>
