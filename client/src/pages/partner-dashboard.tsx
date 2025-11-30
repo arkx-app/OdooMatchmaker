@@ -775,7 +775,7 @@ export default function PartnerDashboard() {
   
   const navItems = [
     { id: "overview", label: "Overview", icon: Home },
-    { id: "swipe", label: "Find Clients", icon: Search, badge: newLikes.length },
+    { id: "swipe", label: "Swipe on Clients", icon: ThumbsUp, badge: newLikes.length },
     { id: "likes", label: "New Likes", icon: Inbox, badge: newLikes.length },
     { id: "matches", label: "Active Matches", icon: Users, badge: mutualMatches.length },
     { id: "messages", label: "Messages", icon: MessageCircle },
@@ -1009,12 +1009,12 @@ export default function PartnerDashboard() {
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                          <Search className="w-7 h-7 text-white" />
+                          <ThumbsUp className="w-7 h-7 text-white" />
                         </div>
                         <div>
-                          <h2 className="text-xl font-bold">Discover New Client Opportunities</h2>
+                          <h2 className="text-xl font-bold">Swipe Through Client Opportunities</h2>
                           <p className="text-muted-foreground">
-                            Review interested clients and connect with businesses that match your expertise
+                            Review interested clients and swipe right to connect with businesses that match your expertise
                           </p>
                         </div>
                       </div>
@@ -1022,10 +1022,10 @@ export default function PartnerDashboard() {
                         size="lg" 
                         onClick={() => navigate("/partner/swipe")}
                         className="bg-gradient-to-br from-blue-500 to-purple-600 text-white shrink-0"
-                        data-testid="button-find-clients"
+                        data-testid="button-start-swiping"
                       >
-                        <Users className="w-5 h-5 mr-2" />
-                        Find Clients
+                        <ThumbsUp className="w-5 h-5 mr-2" />
+                        Start Swiping
                       </Button>
                     </div>
                   </CardContent>
