@@ -201,7 +201,7 @@ export default function Messaging({ matchId }: { matchId?: string }) {
     return (
       <div className="h-screen flex flex-col bg-background">
         <header className="border-b p-4 flex items-center gap-4 bg-card">
-          <Button variant="ghost" size="icon" onClick={() => setLocation(userRole === "partner" ? "/partner/dashboard" : "/client/dashboard")}>
+          <Button variant="ghost" size="icon" onClick={() => setLocation(userRole === "partner" ? "/partner/dashboard" : "/client/dashboard")} data-testid="button-back-to-dashboard">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-xl font-semibold">Messages</h1>
@@ -238,7 +238,7 @@ export default function Messaging({ matchId }: { matchId?: string }) {
           variant="ghost" 
           size="icon" 
           onClick={() => setLocation(userRole === "partner" ? "/partner/dashboard" : "/client/dashboard")}
-          data-testid="button-back"
+          data-testid="button-back-to-dashboard"
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>

@@ -276,7 +276,7 @@ export default function ClientBrief() {
               variant="ghost" 
               size="icon" 
               onClick={() => navigate("/client/dashboard")}
-              data-testid="button-back-profile"
+              data-testid="button-back-to-dashboard"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
@@ -365,7 +365,7 @@ export default function ClientBrief() {
             variant="ghost" 
             size="icon" 
             onClick={() => navigate("/client/dashboard")}
-            data-testid="button-back"
+            data-testid="button-back-to-dashboard"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
