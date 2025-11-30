@@ -250,6 +250,33 @@ export default {
       bulkOperations: "Massenoperationen",
       slaGuarantees: "SLA-Garantien",
     },
+    clientFeatures: {
+      browse: {
+        title: "Verifizierte Partner durchsuchen",
+        description: "Zugang zu unserem kuratierten Netzwerk qualifizierter ERP-Implementierungsexperten",
+      },
+      matching: {
+        title: "Intelligentes Matching",
+        description: "Werden Sie mit Partnern basierend auf Ihrer Branche, Budget und Projektanforderungen gematcht",
+      },
+      messaging: {
+        title: "Direkte Nachrichten",
+        description: "Kommunizieren Sie direkt mit gematchten Partnern über unsere Plattform",
+      },
+      reviews: {
+        title: "Verifizierte Bewertungen",
+        description: "Lesen Sie authentische Bewertungen von anderen Unternehmen, die mit Partnern gearbeitet haben",
+      },
+      unlimited: {
+        title: "Unbegrenzte Matches",
+        description: "Liken und verbinden Sie sich mit so vielen Partnern wie Sie brauchen - keine Einschränkungen",
+      },
+      free: {
+        title: "Immer Kostenlos",
+        description: "Keine versteckten Gebühren, keine Kreditkarte erforderlich - komplett kostenlos für immer",
+      },
+    },
+    billedAnnually: "Jährlich abgerechnet ${{amount}} ({{percent}}% sparen)",
   },
 
   // Dashboard - Common

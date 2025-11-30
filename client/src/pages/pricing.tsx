@@ -63,39 +63,6 @@ const partnerPlans = [
   },
 ];
 
-const clientFeatures = [
-  {
-    icon: Briefcase,
-    title: "Browse Vetted Partners",
-    description: "Access our curated network of qualified ERP implementation experts",
-  },
-  {
-    icon: Star,
-    title: "Smart Matching",
-    description: "Get matched with partners based on your industry, budget, and project needs",
-  },
-  {
-    icon: MessageCircle,
-    title: "Direct Messaging",
-    description: "Communicate directly with matched partners through our platform",
-  },
-  {
-    icon: Shield,
-    title: "Verified Reviews",
-    description: "Read authentic reviews from other businesses who worked with partners",
-  },
-  {
-    icon: Users,
-    title: "Unlimited Matches",
-    description: "Like and connect with as many partners as you need - no restrictions",
-  },
-  {
-    icon: Gift,
-    title: "Always Free",
-    description: "No hidden fees, no credit card required - completely free forever",
-  },
-];
-
 export default function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
   const [isPartnerView, setIsPartnerView] = useState(true);
@@ -219,17 +186,24 @@ export default function Pricing() {
 
             {/* Client Features Grid */}
             <div className="space-y-8">
-              <h2 className="text-2xl font-bold text-center">What's Included</h2>
+              <h2 className="text-2xl font-bold text-center">{t('pricing.client.included')}</h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {clientFeatures.map((feature, i) => {
+                {[
+                  { icon: Briefcase, titleKey: 'pricing.clientFeatures.browse.title', descKey: 'pricing.clientFeatures.browse.description' },
+                  { icon: Star, titleKey: 'pricing.clientFeatures.matching.title', descKey: 'pricing.clientFeatures.matching.description' },
+                  { icon: MessageCircle, titleKey: 'pricing.clientFeatures.messaging.title', descKey: 'pricing.clientFeatures.messaging.description' },
+                  { icon: Shield, titleKey: 'pricing.clientFeatures.reviews.title', descKey: 'pricing.clientFeatures.reviews.description' },
+                  { icon: Users, titleKey: 'pricing.clientFeatures.unlimited.title', descKey: 'pricing.clientFeatures.unlimited.description' },
+                  { icon: Gift, titleKey: 'pricing.clientFeatures.free.title', descKey: 'pricing.clientFeatures.free.description' },
+                ].map((feature, i) => {
                   const Icon = feature.icon;
                   return (
                     <Card key={i} className="p-6 space-y-4">
                       <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-client-from/10 to-client-to/10 flex items-center justify-center">
                         <Icon className="w-6 h-6 text-client-from" />
                       </div>
-                      <h3 className="font-semibold">{feature.title}</h3>
-                      <p className="text-sm text-muted-foreground">{feature.description}</p>
+                      <h3 className="font-semibold">{t(feature.titleKey)}</h3>
+                      <p className="text-sm text-muted-foreground">{t(feature.descKey)}</p>
                     </Card>
                   );
                 })}
@@ -332,7 +306,7 @@ export default function Pricing() {
                         </div>
                         {isYearly && (
                           <p className="text-sm text-muted-foreground">
-                            Billed ${plan.yearlyPrice} annually (save {savings(plan)}%)
+                            {t('pricing.billedAnnually', { amount: plan.yearlyPrice, percent: savings(plan) })}
                           </p>
                         )}
                       </div>

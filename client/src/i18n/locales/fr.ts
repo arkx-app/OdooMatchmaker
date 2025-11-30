@@ -250,6 +250,33 @@ export default {
       bulkOperations: "Opérations en masse",
       slaGuarantees: "Garanties SLA",
     },
+    clientFeatures: {
+      browse: {
+        title: "Parcourir les Partenaires Vérifiés",
+        description: "Accédez à notre réseau organisé d'experts en implémentation ERP qualifiés",
+      },
+      matching: {
+        title: "Correspondance Intelligente",
+        description: "Soyez mis en correspondance avec des partenaires selon votre secteur, budget et besoins de projet",
+      },
+      messaging: {
+        title: "Messagerie Directe",
+        description: "Communiquez directement avec les partenaires correspondants via notre plateforme",
+      },
+      reviews: {
+        title: "Avis Vérifiés",
+        description: "Lisez des avis authentiques d'autres entreprises qui ont travaillé avec des partenaires",
+      },
+      unlimited: {
+        title: "Correspondances Illimitées",
+        description: "Aimez et connectez-vous avec autant de partenaires que nécessaire - sans restrictions",
+      },
+      free: {
+        title: "Toujours Gratuit",
+        description: "Pas de frais cachés, pas de carte de crédit requise - entièrement gratuit pour toujours",
+      },
+    },
+    billedAnnually: "Facturé ${{amount}} annuellement (économisez {{percent}}%)",
   },
 
   // Dashboard - Common

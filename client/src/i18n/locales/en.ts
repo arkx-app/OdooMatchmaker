@@ -252,6 +252,33 @@ export default {
       bulkOperations: "Bulk operations",
       slaGuarantees: "SLA guarantees",
     },
+    clientFeatures: {
+      browse: {
+        title: "Browse Vetted Partners",
+        description: "Access our curated network of qualified ERP implementation experts",
+      },
+      matching: {
+        title: "Smart Matching",
+        description: "Get matched with partners based on your industry, budget, and project needs",
+      },
+      messaging: {
+        title: "Direct Messaging",
+        description: "Communicate directly with matched partners through our platform",
+      },
+      reviews: {
+        title: "Verified Reviews",
+        description: "Read authentic reviews from other businesses who worked with partners",
+      },
+      unlimited: {
+        title: "Unlimited Matches",
+        description: "Like and connect with as many partners as you need - no restrictions",
+      },
+      free: {
+        title: "Always Free",
+        description: "No hidden fees, no credit card required - completely free forever",
+      },
+    },
+    billedAnnually: "Billed ${{amount}} annually (save {{percent}}%)",
   },
 
   // Dashboard - Common

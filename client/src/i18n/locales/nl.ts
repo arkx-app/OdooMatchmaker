@@ -250,6 +250,33 @@ export default {
       bulkOperations: "Bulkbewerkingen",
       slaGuarantees: "SLA-garanties",
     },
+    clientFeatures: {
+      browse: {
+        title: "Doorzoek Geverifieerde Partners",
+        description: "Toegang tot ons gecureerde netwerk van gekwalificeerde ERP-implementatie-experts",
+      },
+      matching: {
+        title: "Slimme Matching",
+        description: "Word gematcht met partners op basis van uw branche, budget en projectbehoeften",
+      },
+      messaging: {
+        title: "Directe Berichten",
+        description: "Communiceer direct met gematchte partners via ons platform",
+      },
+      reviews: {
+        title: "Geverifieerde Beoordelingen",
+        description: "Lees authentieke beoordelingen van andere bedrijven die met partners hebben gewerkt",
+      },
+      unlimited: {
+        title: "Onbeperkte Matches",
+        description: "Like en maak contact met zoveel partners als u nodig heeft - geen beperkingen",
+      },
+      free: {
+        title: "Altijd Gratis",
+        description: "Geen verborgen kosten, geen creditcard vereist - volledig gratis voor altijd",
+      },
+    },
+    billedAnnually: "Gefactureerd ${{amount}} per jaar (bespaar {{percent}}%)",
   },
 
   // Dashboard - Common
