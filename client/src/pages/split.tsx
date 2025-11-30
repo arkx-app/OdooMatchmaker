@@ -1,9 +1,11 @@
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Users, Briefcase, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Split() {
   const [, setLocation] = useLocation();
+  const { t } = useTranslation();
 
   const handleClientClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -49,15 +51,15 @@ export default function Split() {
             
             <div className="space-y-4">
               <h1 className="text-5xl lg:text-7xl font-bold text-white tracking-tight">
-                I'm a Client
+                {t('split.client.title')}
               </h1>
               <p className="text-xl lg:text-2xl text-white/90 max-w-md mx-auto">
-                Find the perfect ERP Partner for your business needs
+                {t('split.client.description')}
               </p>
             </div>
             
             <div className="flex items-center justify-center gap-2 text-white/80 text-lg">
-              <span>Create your account</span>
+              <span>{t('split.client.cta')}</span>
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </div>
           </div>
@@ -81,15 +83,15 @@ export default function Split() {
             
             <div className="space-y-4">
               <h1 className="text-5xl lg:text-7xl font-bold text-white tracking-tight">
-                I'm a Partner
+                {t('split.partner.title')}
               </h1>
               <p className="text-xl lg:text-2xl text-white/90 max-w-md mx-auto">
-                Connect with clients seeking your expertise
+                {t('split.partner.description')}
               </p>
             </div>
             
             <div className="flex items-center justify-center gap-2 text-white/80 text-lg">
-              <span>Create your account</span>
+              <span>{t('split.partner.cta')}</span>
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </div>
           </div>

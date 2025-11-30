@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Check, Users, Sparkles, Zap, Briefcase, Star, MessageCircle, Shield, Gift } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -98,6 +99,7 @@ const clientFeatures = [
 export default function Pricing() {
   const [isYearly, setIsYearly] = useState(false);
   const [isPartnerView, setIsPartnerView] = useState(true);
+  const { t } = useTranslation();
 
   const savings = (plan: typeof partnerPlans[0]) => {
     const yearlyCost = plan.monthlyPrice * 12;
@@ -115,7 +117,7 @@ export default function Pricing() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <h1 className="text-xl font-bold">Pricing</h1>
+          <h1 className="text-xl font-bold">{t('pricing.title')}</h1>
           <div className="w-10" />
         </div>
       </header>
@@ -133,7 +135,7 @@ export default function Pricing() {
               }`}
               data-testid="toggle-client-view"
             >
-              I'm a Client
+              {t('pricing.clientView')}
             </button>
             <button
               onClick={() => setIsPartnerView(true)}
@@ -144,7 +146,7 @@ export default function Pricing() {
               }`}
               data-testid="toggle-partner-view"
             >
-              I'm a Partner
+              {t('pricing.partnerView')}
             </button>
           </div>
         </div>
@@ -154,13 +156,13 @@ export default function Pricing() {
           <div className="space-y-12">
             <div className="text-center space-y-6">
               <Badge className="bg-gradient-to-r from-client-from to-client-to text-white">
-                100% Free for Clients
+                {t('pricing.freeForClients')}
               </Badge>
               <h1 className="text-4xl md:text-5xl font-bold">
-                Find Your Perfect ERP Partner
+                {t('pricing.client.title')}
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Our platform is completely free for clients. No hidden fees, no premium tiers, no credit card required.
+                {t('pricing.client.subtitle')}
               </p>
             </div>
 
@@ -171,29 +173,29 @@ export default function Pricing() {
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-client-from to-client-to">
                     <Gift className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold">Client Access</h3>
+                  <h3 className="text-2xl font-bold">{t('pricing.client.cardTitle')}</h3>
                   <div className="space-y-1">
                     <div className="flex items-baseline justify-center gap-2">
                       <span className="text-6xl font-bold bg-gradient-to-r from-client-from to-client-to bg-clip-text text-transparent" data-testid="text-client-price">
-                        Free
+                        {t('pricing.client.free')}
                       </span>
                     </div>
-                    <p className="text-muted-foreground">Forever. No credit card needed.</p>
+                    <p className="text-muted-foreground">{t('pricing.client.forever')}</p>
                   </div>
                 </div>
 
                 <div className="pt-4 border-t">
-                  <p className="text-sm font-medium text-center mb-4">Everything you need to find the right partner:</p>
+                  <p className="text-sm font-medium text-center mb-4">{t('pricing.client.included')}</p>
                   <ul className="space-y-3">
                     {[
-                      "Unlimited partner browsing",
-                      "Smart matching algorithm",
-                      "Detailed partner profiles",
-                      "Direct messaging with matches",
-                      "Project brief creation",
-                      "Partner reviews & ratings",
-                      "Email notifications",
-                      "Full dashboard access",
+                      t('pricing.client.features.browse'),
+                      t('pricing.client.features.matching'),
+                      t('pricing.client.features.profiles'),
+                      t('pricing.client.features.messaging'),
+                      t('pricing.client.features.briefs'),
+                      t('pricing.client.features.reviews'),
+                      t('pricing.client.features.notifications'),
+                      t('pricing.client.features.dashboard'),
                     ].map((feature, i) => (
                       <li key={i} className="flex gap-3">
                         <Check className="w-5 h-5 text-client-from flex-shrink-0 mt-0.5" />
@@ -209,7 +211,7 @@ export default function Pricing() {
                     size="lg"
                     data-testid="button-client-signup"
                   >
-                    Get Started Free
+                    {t('pricing.client.cta')}
                   </Button>
                 </Link>
               </Card>
@@ -236,9 +238,9 @@ export default function Pricing() {
 
             {/* Partner CTA for clients */}
             <div className="bg-gradient-to-r from-partner-from/10 to-partner-to/10 border rounded-lg p-8 md:p-12 text-center space-y-4">
-              <h2 className="text-2xl md:text-3xl font-bold">Are You an ERP Partner?</h2>
+              <h2 className="text-2xl md:text-3xl font-bold">{t('pricing.client.partnerCta')}</h2>
               <p className="text-muted-foreground max-w-xl mx-auto">
-                Join our network to connect with qualified clients looking for implementation partners.
+                {t('pricing.client.partnerCtaText')}
               </p>
               <Button 
                 variant="outline" 
@@ -246,7 +248,7 @@ export default function Pricing() {
                 onClick={() => setIsPartnerView(true)}
                 data-testid="button-view-partner-pricing"
               >
-                View Partner Pricing
+                {t('pricing.client.viewPartnerPricing')}
               </Button>
             </div>
           </div>
@@ -257,19 +259,18 @@ export default function Pricing() {
           <div className="space-y-12">
             <div className="text-center space-y-6">
               <Badge className="bg-gradient-to-r from-partner-from to-partner-to text-white">
-                For Partners Only
+                {t('pricing.forPartnersOnly')}
               </Badge>
               <h1 className="text-4xl md:text-5xl font-bold">
-                Grow Your ERP Practice
+                {t('pricing.partner.title')}
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Connect with qualified clients looking for Odoo implementation partners. 
-                Clients use our platform for free - partners pay to unlock premium features.
+                {t('pricing.partner.subtitle')}
               </p>
 
               <div className="flex items-center justify-center gap-4 pt-4">
                 <span className={`text-sm font-medium ${!isYearly ? "text-foreground" : "text-muted-foreground"}`}>
-                  Monthly
+                  {t('pricing.monthly')}
                 </span>
                 <Switch
                   checked={isYearly}
@@ -277,11 +278,11 @@ export default function Pricing() {
                   data-testid="switch-billing-period"
                 />
                 <span className={`text-sm font-medium ${isYearly ? "text-foreground" : "text-muted-foreground"}`}>
-                  Yearly
+                  {t('pricing.yearly')}
                 </span>
                 {isYearly && (
                   <Badge variant="default" className="bg-gradient-to-r from-success-from to-success-to">
-                    Save up to 20%
+                    {t('pricing.saveUpTo', { percent: 20 })}
                   </Badge>
                 )}
               </div>
@@ -305,7 +306,7 @@ export default function Pricing() {
                         className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-partner-from to-partner-to"
                         data-testid="badge-popular"
                       >
-                        Most Popular
+                        {t('pricing.mostPopular')}
                       </Badge>
                     )}
 
@@ -327,7 +328,7 @@ export default function Pricing() {
                           <span className="text-5xl font-bold" data-testid={`text-price-${plan.name.toLowerCase()}`}>
                             ${isYearly ? Math.round(plan.yearlyPrice / 12) : plan.monthlyPrice}
                           </span>
-                          <span className="text-muted-foreground">/month</span>
+                          <span className="text-muted-foreground">{t('pricing.perMonth')}</span>
                         </div>
                         {isYearly && (
                           <p className="text-sm text-muted-foreground">
@@ -357,7 +358,7 @@ export default function Pricing() {
                         size="lg"
                         data-testid={`button-select-${plan.name.toLowerCase()}`}
                       >
-                        Get Started
+                        {t('pricing.getStarted')}
                       </Button>
                     </Link>
                   </Card>
@@ -366,28 +367,28 @@ export default function Pricing() {
             </div>
 
             <div className="bg-gradient-to-r from-partner-from/10 to-partner-to/10 border rounded-lg p-8 md:p-12 text-center space-y-4">
-              <h2 className="text-2xl md:text-3xl font-bold">Not sure which plan is right for you?</h2>
+              <h2 className="text-2xl md:text-3xl font-bold">{t('pricing.partner.unsure')}</h2>
               <p className="text-muted-foreground max-w-xl mx-auto">
-                Our team can help you find the perfect plan for your Odoo partnership business. Let's connect and discuss your goals.
+                {t('pricing.partner.unsureText')}
               </p>
               <Link href="/book-demo">
                 <Button variant="outline" size="lg" data-testid="button-schedule-demo">
-                  Schedule a Demo
+                  {t('pricing.partner.scheduleDemo')}
                 </Button>
               </Link>
             </div>
 
             <div className="text-center space-y-4 py-8 border-t">
-              <h3 className="text-xl font-semibold">Looking to Find an ERP Partner?</h3>
+              <h3 className="text-xl font-semibold">{t('pricing.partner.clientCta')}</h3>
               <p className="text-muted-foreground">
-                If you're a client looking for an Odoo implementation partner, our platform is completely free for you.
+                {t('pricing.partner.clientCtaText')}
               </p>
               <Button 
                 variant="outline" 
                 onClick={() => setIsPartnerView(false)}
                 data-testid="button-view-client-pricing"
               >
-                View Client Pricing (Free)
+                {t('pricing.partner.viewClientPricing')}
               </Button>
             </div>
           </div>
