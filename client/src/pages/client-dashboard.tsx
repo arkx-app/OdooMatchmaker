@@ -969,6 +969,34 @@ export default function ClientDashboard() {
 
             {activeSection === "overview" && (
               <div className="space-y-6">
+                {/* Prominent Matching CTA */}
+                <Card className="bg-gradient-to-r from-orange-500/10 to-pink-500/10 border-orange-500/20">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center">
+                          <Search className="w-7 h-7 text-white" />
+                        </div>
+                        <div>
+                          <h2 className="text-xl font-bold">Find Your Perfect ERP Partner</h2>
+                          <p className="text-muted-foreground">
+                            Swipe through qualified partners and connect with the right match for your project
+                          </p>
+                        </div>
+                      </div>
+                      <Button 
+                        size="lg" 
+                        onClick={() => navigate("/client/swipe")}
+                        className="bg-gradient-to-r from-orange-500 to-pink-500 text-white shrink-0"
+                        data-testid="button-start-matching"
+                      >
+                        <ThumbsUp className="w-5 h-5 mr-2" />
+                        Start Matching
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                   <StatCard icon={Briefcase} label="Projects" value={briefs.length} color="blue" />
                   <StatCard icon={ThumbsUp} label="Liked" value={likedPartners.length} color="pink" />

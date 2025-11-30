@@ -1003,6 +1003,34 @@ export default function PartnerDashboard() {
               </div>
             ) : activeTab === "overview" ? (
               <div className="space-y-6">
+                {/* Prominent Matching CTA */}
+                <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/20">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                          <Search className="w-7 h-7 text-white" />
+                        </div>
+                        <div>
+                          <h2 className="text-xl font-bold">Discover New Client Opportunities</h2>
+                          <p className="text-muted-foreground">
+                            Review interested clients and connect with businesses that match your expertise
+                          </p>
+                        </div>
+                      </div>
+                      <Button 
+                        size="lg" 
+                        onClick={() => navigate("/partner/swipe")}
+                        className="bg-gradient-to-br from-blue-500 to-purple-600 text-white shrink-0"
+                        data-testid="button-find-clients"
+                      >
+                        <Users className="w-5 h-5 mr-2" />
+                        Find Clients
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <StatCard
                     icon={Inbox}
