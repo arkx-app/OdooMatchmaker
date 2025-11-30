@@ -1,8 +1,62 @@
 import { db } from "./db";
-import { partners, users, briefs, clients } from "@shared/schema";
+import { partners, users, briefs, clients, matches } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
+
+// Sample clients for testing partner swiping
+export const SAMPLE_CLIENTS = [
+  {
+    name: "John Smith",
+    email: "john@acmecorp.com",
+    company: "Acme Corporation",
+    industry: "Manufacturing",
+    budget: "50000-100000",
+    companySize: "smb",
+    projectTimeline: "3-6 months",
+    odooModules: ["Manufacturing", "Inventory", "Accounting", "MRP"],
+  },
+  {
+    name: "Emily Davis",
+    email: "emily@techstart.io",
+    company: "TechStart Inc",
+    industry: "Technology",
+    budget: "25000-50000",
+    companySize: "startup",
+    projectTimeline: "1-3 months",
+    odooModules: ["CRM", "Sales", "Project", "Invoicing"],
+  },
+  {
+    name: "Michael Brown",
+    email: "michael@globalretail.com",
+    company: "Global Retail Group",
+    industry: "Retail",
+    budget: "100000-250000",
+    companySize: "enterprise",
+    projectTimeline: "6-12 months",
+    odooModules: ["Point of Sale", "eCommerce", "Inventory", "Accounting", "CRM"],
+  },
+  {
+    name: "Sarah Wilson",
+    email: "sarah@healthplus.org",
+    company: "HealthPlus Medical",
+    industry: "Healthcare",
+    budget: "25000-50000",
+    companySize: "smb",
+    projectTimeline: "3-6 months",
+    odooModules: ["HR", "Payroll", "Timesheets", "Accounting"],
+  },
+  {
+    name: "David Lee",
+    email: "david@constructco.com",
+    company: "ConstructCo Builders",
+    industry: "Construction",
+    budget: "50000-100000",
+    companySize: "smb",
+    projectTimeline: "3-6 months",
+    odooModules: ["Project", "Timesheets", "Accounting", "Invoicing"],
+  },
+];
 
 // Sample project briefs for testing
 export const SAMPLE_BRIEFS = [
@@ -336,4 +390,96 @@ export async function seedBriefsForClient(clientId: string) {
 
   console.log(`Brief seeding complete! Created ${seededBriefs.length} briefs.`);
   return seededBriefs;
+}
+
+// Seed test clients who have "liked" partners for testing partner swiping
+export async function seedTestClientsForPartnerSwiping() {
+  console.log("Checking for existing test clients...");
+  
+  // Get all partners
+  const allPartners = await db.select().from(partners);
+  if (allPartners.length === 0) {
+    console.log("No partners found, skipping client seeding.");
+    return;
+  }
+
+  // Check if we already have test clients
+  const existingClients = await db.select().from(clients);
+  if (existingClients.length >= 5) {
+    console.log(`Found ${existingClients.length} existing clients, skipping seed.`);
+    return;
+  }
+
+  console.log("Seeding test clients for partner swiping...");
+
+  for (const clientData of SAMPLE_CLIENTS) {
+    try {
+      const clientId = randomUUID();
+      const passwordHash = await bcrypt.hash("demo123", 10);
+
+      // Create user for client
+      await db.insert(users).values({
+        id: clientData.email,
+        email: clientData.email,
+        passwordHash,
+        firstName: clientData.name.split(" ")[0],
+        lastName: clientData.name.split(" ").slice(1).join(" "),
+        role: "client",
+        authProvider: "local",
+        emailVerified: true,
+      }).onConflictDoNothing();
+
+      // Create client profile
+      await db.insert(clients).values({
+        id: clientId,
+        userId: clientData.email,
+        name: clientData.name,
+        email: clientData.email,
+        company: clientData.company,
+        industry: clientData.industry,
+        budget: clientData.budget,
+        companySize: clientData.companySize,
+        projectTimeline: clientData.projectTimeline,
+        odooModules: clientData.odooModules,
+      }).onConflictDoNothing();
+
+      // Create a brief for this client
+      const briefId = randomUUID();
+      await db.insert(briefs).values({
+        id: briefId,
+        clientId,
+        title: `${clientData.company} ERP Implementation`,
+        description: `Looking for an Odoo partner to help with ${clientData.odooModules.join(", ")} implementation.`,
+        modules: clientData.odooModules,
+        budget: clientData.budget,
+        timelineWeeks: 12,
+        priority: "high",
+        status: "active",
+      }).onConflictDoNothing();
+
+      // Create matches where this client "liked" some partners
+      // Each client likes 2-3 random partners
+      const partnersToLike = allPartners.slice(0, 3);
+      for (const partner of partnersToLike) {
+        const matchId = randomUUID();
+        await db.insert(matches).values({
+          id: matchId,
+          clientId,
+          partnerId: partner.id,
+          briefId,
+          clientLiked: true,
+          partnerResponded: false,
+          partnerAccepted: false,
+          status: "suggested",
+          score: Math.floor(Math.random() * 30) + 70, // 70-100 score
+        }).onConflictDoNothing();
+      }
+
+      console.log(`Seeded client: ${clientData.company} with matches`);
+    } catch (error) {
+      console.log(`Client ${clientData.company} may already exist, skipping...`);
+    }
+  }
+
+  console.log("Test client seeding complete!");
 }

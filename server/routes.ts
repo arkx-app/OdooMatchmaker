@@ -10,7 +10,7 @@ import {
   updatePartnerServiceTicketSchema, insertPartnerServiceTicketNoteSchema,
   insertPartnerSalesOpportunitySchema, updatePartnerSalesOpportunitySchema
 } from "@shared/schema";
-import { seedPartners, seedBriefsForClient } from "./seed-data";
+import { seedPartners, seedBriefsForClient, seedTestClientsForPartnerSwiping } from "./seed-data";
 
 function calculateMatchScore(brief: any, partner: any): { score: number; breakdown: any; reasons: string[] } {
   const breakdown: any = {};
@@ -1360,7 +1360,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
 
-  seedPartners().catch(err => console.error("Failed to seed partners:", err));
+  // Seed demo data
+  seedPartners()
+    .then(() => seedTestClientsForPartnerSwiping())
+    .catch(err => console.error("Failed to seed data:", err));
 
   return httpServer;
 }
