@@ -1,64 +1,70 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Check, Users, Sparkles, Zap, Briefcase, Star, MessageCircle, Shield, Gift } from "lucide-react";
+import { ArrowLeft, Check, Users, Sparkles, Zap, Briefcase, Star, MessageCircle, Shield, Gift, LucideIcon } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 
-const partnerPlans = [
+interface PlanConfig {
+  key: string;
+  icon: LucideIcon;
+  monthlyPrice: number;
+  yearlyPrice: number;
+  featured?: boolean;
+  featureKeys: string[];
+}
+
+const planConfigs: PlanConfig[] = [
   {
-    name: "Starter",
-    description: "Perfect for new ERP partners building their client base",
+    key: "starter",
+    icon: Zap,
     monthlyPrice: 29,
     yearlyPrice: 279,
-    icon: Zap,
-    features: [
-      "Up to 50 qualified client leads per month",
-      "Basic profile visibility",
-      "Email notifications for matches",
-      "Standard support",
-      "Match history (30 days)",
-      "Client filtering by budget",
+    featureKeys: [
+      "leadsPerMonth",
+      "basicVisibility",
+      "emailNotifications",
+      "standardSupport",
+      "matchHistory30",
+      "budgetFilter",
     ],
   },
   {
-    name: "Professional",
-    description: "Ideal for established partners seeking consistent growth",
+    key: "professional",
+    icon: Users,
     monthlyPrice: 79,
     yearlyPrice: 759,
-    icon: Users,
-    features: [
-      "Unlimited qualified client leads",
-      "Enhanced profile visibility & featured placement",
-      "Priority matching algorithm",
-      "Real-time notifications",
-      "Match history (unlimited)",
-      "Advanced filtering by industry & project size",
-      "Client messaging system",
-      "Priority support",
-      "Performance analytics",
-    ],
     featured: true,
+    featureKeys: [
+      "unlimitedLeads",
+      "enhancedVisibility",
+      "priorityMatching",
+      "realTimeNotifications",
+      "matchHistoryUnlimited",
+      "advancedFilter",
+      "messaging",
+      "prioritySupport",
+      "analytics",
+    ],
   },
   {
-    name: "Enterprise",
-    description: "For agencies and consultancies managing multiple partners",
+    key: "enterprise",
+    icon: Sparkles,
     monthlyPrice: 199,
     yearlyPrice: 1910,
-    icon: Sparkles,
-    features: [
-      "Everything in Professional",
-      "Dedicated account manager",
-      "Custom matching criteria",
-      "API access for integration",
-      "Team management (multiple users)",
-      "Advanced analytics dashboard",
-      "White-label options",
-      "Bulk operations",
-      "24/7 premium support",
-      "SLA guarantees",
+    featureKeys: [
+      "everythingInPro",
+      "accountManager",
+      "customCriteria",
+      "apiAccess",
+      "teamManagement",
+      "advancedAnalytics",
+      "whiteLabel",
+      "bulkOperations",
+      "premiumSupport",
+      "slaGuarantees",
     ],
   },
 ];
@@ -68,7 +74,7 @@ export default function Pricing() {
   const [isPartnerView, setIsPartnerView] = useState(true);
   const { t } = useTranslation();
 
-  const savings = (plan: typeof partnerPlans[0]) => {
+  const savings = (plan: PlanConfig) => {
     const yearlyCost = plan.monthlyPrice * 12;
     const savingsAmount = yearlyCost - plan.yearlyPrice;
     const percentage = Math.round((savingsAmount / yearlyCost) * 100);
@@ -263,17 +269,19 @@ export default function Pricing() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-              {partnerPlans.map((plan) => {
+              {planConfigs.map((plan) => {
                 const Icon = plan.icon;
+                const planName = t(`pricing.partner.${plan.key}.name`);
+                const planDescription = t(`pricing.partner.${plan.key}.description`);
                 return (
                   <Card
-                    key={plan.name}
+                    key={plan.key}
                     className={`p-8 space-y-8 relative ${
                       plan.featured
                         ? "border-partner-from border-2 shadow-2xl md:scale-105 bg-gradient-to-b from-card via-card to-partner-from/5"
                         : ""
                     }`}
-                    data-testid={`card-plan-${plan.name.toLowerCase()}`}
+                    data-testid={`card-plan-${plan.key}`}
                   >
                     {plan.featured && (
                       <Badge
@@ -293,13 +301,13 @@ export default function Pricing() {
                         }`}>
                           <Icon className={`w-5 h-5 ${plan.featured ? "text-white" : "text-foreground"}`} />
                         </div>
-                        <h3 className="text-2xl font-bold">{plan.name}</h3>
+                        <h3 className="text-2xl font-bold">{planName}</h3>
                       </div>
-                      <p className="text-sm text-muted-foreground">{plan.description}</p>
+                      <p className="text-sm text-muted-foreground">{planDescription}</p>
 
                       <div className="space-y-2">
                         <div className="flex items-baseline gap-1">
-                          <span className="text-5xl font-bold" data-testid={`text-price-${plan.name.toLowerCase()}`}>
+                          <span className="text-5xl font-bold" data-testid={`text-price-${plan.key}`}>
                             ${isYearly ? Math.round(plan.yearlyPrice / 12) : plan.monthlyPrice}
                           </span>
                           <span className="text-muted-foreground">{t('pricing.perMonth')}</span>
@@ -313,15 +321,20 @@ export default function Pricing() {
                     </div>
 
                     <ul className="space-y-3">
-                      {plan.features.map((feature, i) => (
+                      {plan.featureKeys.map((featureKey, i) => (
                         <li key={i} className="flex gap-3">
                           <Check className="w-5 h-5 text-success-from flex-shrink-0 mt-0.5" />
-                          <span className="text-sm">{feature}</span>
+                          <span className="text-sm">
+                            {featureKey === "leadsPerMonth" 
+                              ? t(`pricing.features.${featureKey}`, { count: 50 })
+                              : t(`pricing.features.${featureKey}`)
+                            }
+                          </span>
                         </li>
                       ))}
                     </ul>
 
-                    <Link href={`/checkout?plan=${plan.name.toLowerCase()}&billing=${isYearly ? "yearly" : "monthly"}`}>
+                    <Link href={`/checkout?plan=${plan.key}&billing=${isYearly ? "yearly" : "monthly"}`}>
                       <Button
                         className={`w-full ${
                           plan.featured
@@ -330,7 +343,7 @@ export default function Pricing() {
                         }`}
                         variant={plan.featured ? "default" : "outline"}
                         size="lg"
-                        data-testid={`button-select-${plan.name.toLowerCase()}`}
+                        data-testid={`button-select-${plan.key}`}
                       >
                         {t('pricing.getStarted')}
                       </Button>
