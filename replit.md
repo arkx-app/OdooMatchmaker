@@ -59,6 +59,15 @@ The application implements a dual-identity design system with distinct visual tr
 - **Immediate dashboard on login:** After login, users are taken directly to their respective dashboards with no intermediate pages or redirects
 - **Helpdesk notification badges:** Real-time notification badges (destructive/red) on Helpdesk nav items showing count of tickets with new admin replies, polled every 30 seconds
 
+**Internationalization (i18n):**
+- **Library:** react-i18next with i18next-browser-languagedetector
+- **Supported Languages:** English (default), Dutch (nl), French (fr), German (de)
+- **Translation Files:** Located in `client/src/i18n/locales/` with separate files per language (en.ts, nl.ts, fr.ts, de.ts)
+- **Language Selector:** Globe icon in navbar with dropdown for language selection
+- **Language Persistence:** Uses localStorage to maintain user's language choice across sessions
+- **Key Pattern:** Nested object structure with dot notation (e.g., `t('pricing.client.title')`)
+- **Translated Pages:** Public pages (navbar, pricing, split/get-started page)
+
 ### Backend Architecture
 
 **Technology Stack:**
