@@ -93,7 +93,7 @@ export default function ClientHome() {
           </div>
 
           <p className="text-sm text-muted-foreground">
-            Already have an account? <Link href="/client/swipe" className="text-client-from hover:underline">Start swiping</Link>
+            Already have an account? <Link href="/auth" className="text-client-from hover:underline">Sign in</Link>
           </p>
         </section>
       </main>

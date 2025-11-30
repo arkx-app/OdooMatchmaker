@@ -1,30 +1,20 @@
 import { useLocation } from "wouter";
 import { Users, Briefcase, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
 
 export default function Split() {
   const [, setLocation] = useLocation();
-  const { isAuthenticated, isLoading } = useAuth();
-  const searchParams = new URLSearchParams(window.location.search);
-  const isSignup = searchParams.get("signup") === "true";
 
   const handleClientClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isSignup) {
-      setLocation("/client/signup");
-    } else {
-      setLocation("/client-home");
-    }
+    // Always redirect to client signup - users need to create an account first
+    setLocation("/client/signup");
   };
 
   const handlePartnerClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isSignup) {
-      setLocation("/partner/signup");
-    } else {
-      setLocation("/partner-home");
-    }
+    // Always redirect to partner signup - users need to create an account first
+    setLocation("/partner/signup");
   };
   
   return (
@@ -67,7 +57,7 @@ export default function Split() {
             </div>
             
             <div className="flex items-center justify-center gap-2 text-white/80 text-lg">
-              <span>{isSignup ? "Create your account" : "Start swiping"}</span>
+              <span>Create your account</span>
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </div>
           </div>
@@ -99,7 +89,7 @@ export default function Split() {
             </div>
             
             <div className="flex items-center justify-center gap-2 text-white/80 text-lg">
-              <span>{isSignup ? "Create your account" : "Join our network"}</span>
+              <span>Create your account</span>
               <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             </div>
           </div>

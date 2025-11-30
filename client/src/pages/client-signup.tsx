@@ -295,7 +295,7 @@ export default function ClientSignup() {
           </div>
           <h2 className="text-3xl font-bold">Welcome!</h2>
           <p className="text-muted-foreground">
-            Redirecting you to create your first project brief...
+            Redirecting you to your dashboard to start matching with partners...
           </p>
         </Card>
       </div>
